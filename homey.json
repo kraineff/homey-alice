@@ -1,0 +1,204 @@
+[
+    {
+        "capability": "onoff",
+        "type": "devices.capabilities.on_off",
+        "instance": "on"
+    },
+    {
+        "capability": "dim",
+        "type": "devices.capabilities.range",
+        "instance": "brightness",
+        "unit": "unit.percent",
+        "min": 0,
+        "max": 100,
+        "precision": 1,
+        "scale": 100
+    },
+    {
+        "capability": "thermostat_mode",
+        "type": "devices.capabilities.on_off",
+        "instance": "on",
+        "values": {
+            "true": ["heat", "auto", "cool"],
+            "false": "off"
+        }
+    },
+    {
+        "capability": "thermostat_mode",
+        "type": "devices.capabilities.mode",
+        "instance": "thermostat",
+        "values": {
+            "auto": "auto",
+            "heat": "heat",
+            "cool": "cool"
+        }
+    },
+    {
+        "capability": "target_temperature",
+        "type": "devices.capabilities.range",
+        "instance": "temperature",
+        "unit": "unit.temperature.celsius",
+        "min": 0,
+        "max": 100,
+        "precision": 1
+    },
+    {
+        "capability": "measure_temperature",
+        "type": "devices.properties.float",
+        "instance": "temperature",
+        "unit": "unit.temperature.celsius"
+    },
+    {
+        "capability": "measure_co2",
+        "type": "devices.properties.float",
+        "instance": "co2_level",
+        "unit": "unit.ppm"
+    },
+    {
+        "capability": "measure_pm25",
+        "type": "devices.properties.float",
+        "instance": "pm2.5_density",
+        "unit": "unit.density.mcg_m3"
+    },
+    {
+        "capability": "measure_humidity",
+        "type": "devices.properties.float",
+        "instance": "humidity",
+        "unit": "unit.percent"
+    },
+    {
+        "capability": "measure_pressure",
+        "type": "devices.properties.float",
+        "instance": "pressure",
+        "unit": "unit.pressure.bar",
+        "scale": 0.001
+    },
+    {
+        "capability": "measure_battery",
+        "type": "devices.properties.float",
+        "instance": "battery_level",
+        "unit": "unit.percent"
+    },
+    {
+        "capability": "measure_power",
+        "type": "devices.properties.float",
+        "instance": "power",
+        "unit": "unit.watt"
+    },
+    {
+        "capability": "measure_voltage",
+        "type": "devices.properties.float",
+        "instance": "voltage",
+        "unit": "unit.volt"
+    },
+    {
+        "capability": "measure_current",
+        "type": "devices.properties.float",
+        "instance": "amperage",
+        "unit": "unit.ampere"
+    },
+    {
+        "capability": "measure_luminance",
+        "type": "devices.properties.float",
+        "instance": "illumination",
+        "unit": "unit.illumination.lux"
+    },
+    {
+        "capability": "alarm_motion",
+        "type": "devices.properties.event",
+        "instance": "motion",
+        "values": {
+            "detected": true,
+            "not_detected": false
+        }
+    },
+    {
+        "capability": "alarm_contact",
+        "type": "devices.properties.event",
+        "instance": "motion",
+        "values": {
+            "detected": true,
+            "not_detected": false
+        }
+    },
+    {
+        "capability": "alarm_co2",
+        "type": "devices.properties.event",
+        "instance": "gas",
+        "values": {
+            "detected": true,
+            "not_detected": false
+        }
+    },
+    {
+        "capability": "alarm_smoke",
+        "type": "devices.properties.event",
+        "instance": "smoke",
+        "values": {
+            "detected": true,
+            "not_detected": false
+        }
+    },
+    {
+        "capability": "alarm_water",
+        "type": "devices.properties.event",
+        "instance": "water_leak",
+        "values": {
+            "leak": true,
+            "dry": false
+        }
+    },
+    {
+        "capability": "alarm_battery",
+        "type": "devices.properties.event",
+        "instance": "battery_level",
+        "values": {
+            "low": true,
+            "normal": false
+        }
+    },
+    {
+        "capability": "volume_set",
+        "type": "devices.capabilities.range",
+        "instance": "volume",
+        "unit": "unit.percent",
+        "min": 0,
+        "max": 100,
+        "precision": 1,
+        "scale": 100
+    },
+    {
+        "capability": "volume_mute",
+        "type": "devices.capabilities.toggle",
+        "instance": "mute"
+    },
+    {
+        "capability": "locked",
+        "type": "devices.capabilities.on_off",
+        "instance": "on",
+        "values": {
+            "true": false,
+            "false": true
+        }
+    },
+    {
+        "capability": "garagedoor_closed",
+        "type": "devices.capabilities.on_off",
+        "instance": "on"
+    },
+    {
+        "capability": "windowcoverings_set",
+        "type": "devices.capabilities.range",
+        "instance": "open",
+        "unit": "unit.percent",
+        "min": 0,
+        "max": 100,
+        "precision": 1,
+        "scale": 100
+    },
+    {
+        "capability": "speaker_playing",
+        "type": "devices.capabilities.on_off",
+        "instance": "on"
+    }
+]
