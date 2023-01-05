@@ -46,62 +46,72 @@
         "capability": "measure_temperature",
         "type": "devices.properties.float",
         "instance": "temperature",
-        "unit": "unit.temperature.celsius"
+        "unit": "unit.temperature.celsius",
+        "write": false
     },
     {
         "capability": "measure_co2",
         "type": "devices.properties.float",
         "instance": "co2_level",
-        "unit": "unit.ppm"
+        "unit": "unit.ppm",
+        "write": false
     },
     {
         "capability": "measure_pm25",
         "type": "devices.properties.float",
         "instance": "pm2.5_density",
-        "unit": "unit.density.mcg_m3"
+        "unit": "unit.density.mcg_m3",
+        "write": false
     },
     {
         "capability": "measure_humidity",
         "type": "devices.properties.float",
         "instance": "humidity",
-        "unit": "unit.percent"
+        "unit": "unit.percent",
+        "write": false
     },
     {
         "capability": "measure_pressure",
         "type": "devices.properties.float",
         "instance": "pressure",
         "unit": "unit.pressure.bar",
-        "scale": 0.001
+        "scale": 0.001,
+        "write": false
     },
     {
         "capability": "measure_battery",
         "type": "devices.properties.float",
         "instance": "battery_level",
-        "unit": "unit.percent"
+        "unit": "unit.percent",
+        "write": false
     },
     {
         "capability": "measure_power",
         "type": "devices.properties.float",
         "instance": "power",
-        "unit": "unit.watt"
+        "unit": "unit.watt",
+        "write": false
     },
     {
         "capability": "measure_voltage",
         "type": "devices.properties.float",
         "instance": "voltage",
-        "unit": "unit.volt"
+        "unit": "unit.volt",
+        "write": false
     },
     {
         "capability": "measure_current",
         "type": "devices.properties.float",
         "instance": "amperage",
-        "unit": "unit.ampere"
+        "unit": "unit.ampere",
+        "write": false
     },
     {
         "capability": "measure_luminance",
         "type": "devices.properties.float",
         "instance": "illumination",
-        "unit": "unit.illumination.lux"
+        "unit": "unit.illumination.lux",
+        "write": false
     },
     {
         "capability": "alarm_motion",
@@ -110,7 +120,8 @@
         "values": {
             "detected": true,
             "not_detected": false
-        }
+        },
+        "write": false
     },
     {
         "capability": "alarm_contact",
@@ -119,7 +130,8 @@
         "values": {
             "detected": true,
             "not_detected": false
-        }
+        },
+        "write": false
     },
     {
         "capability": "alarm_co2",
@@ -128,7 +140,8 @@
         "values": {
             "detected": true,
             "not_detected": false
-        }
+        },
+        "write": false
     },
     {
         "capability": "alarm_smoke",
@@ -137,7 +150,8 @@
         "values": {
             "detected": true,
             "not_detected": false
-        }
+        },
+        "write": false
     },
     {
         "capability": "alarm_water",
@@ -146,7 +160,8 @@
         "values": {
             "leak": true,
             "dry": false
-        }
+        },
+        "write": false
     },
     {
         "capability": "alarm_battery",
@@ -155,7 +170,8 @@
         "values": {
             "low": true,
             "normal": false
-        }
+        },
+        "write": false
     },
     {
         "capability": "volume_set",
