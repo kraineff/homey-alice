@@ -1,0 +1,22 @@
+[
+    {
+        "type": "devices.properties.event",
+        "instance": "open",
+        "read": {
+            "alarm_tank_lid_open": {
+                "values": {
+                    "opened": true,
+                    "closed": false
+                }
+            }
+        }
+    },
+    {
+        "type": "devices.properties.float",
+        "instance": "water_level",
+        "unit": "unit.percent",
+        "read": {
+            "tank_level": {}
+        }
+    }
+]

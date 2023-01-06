@@ -1,0 +1,18 @@
+[
+    {
+        "type": "devices.properties.float",
+        "instance": "temperature",
+        "unit": "unit.temperature.celsius",
+        "read": {
+            "nh_measure_body_temperature": {}
+        }
+    },
+    {
+        "type": "devices.properties.float",
+        "instance": "pressure",
+        "unit": "unit.pressure.mmhg",
+        "read": {
+            "nh_measure_diastolic_blood_pressure": {}
+        }
+    }
+]
