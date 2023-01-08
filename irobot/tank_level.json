@@ -1,0 +1,8 @@
+[
+    {
+        "type": "devices.properties.float",
+        "instance": "water_level",
+        "unit": "unit.percent",
+        "read": {}
+    }
+]

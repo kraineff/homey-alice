@@ -1,0 +1,10 @@
+[
+    {
+        "type": "devices.properties.float",
+        "instance": "pressure",
+        "unit": "unit.pressure.bar",
+        "read": {
+            "scale": 0.001
+        }
+    }
+]

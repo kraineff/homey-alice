@@ -1,0 +1,12 @@
+[
+    {
+        "type": "devices.properties.event",
+        "instance": "battery_level",
+        "read": {
+            "values": {
+                "low": true,
+                "normal": false
+            }
+        }
+    }
+]

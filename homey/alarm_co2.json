@@ -1,0 +1,12 @@
+[
+    {
+        "type": "devices.properties.event",
+        "instance": "gas",
+        "read": {
+            "values": {
+                "detected": true,
+                "not_detected": false
+            }
+        }
+    }
+]

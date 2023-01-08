@@ -1,0 +1,12 @@
+[
+    {
+        "type": "devices.properties.event",
+        "instance": "water_leak",
+        "read": {
+            "values": {
+                "leak": true,
+                "dry": false
+            }
+        }
+    }
+]

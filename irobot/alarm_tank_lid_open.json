@@ -1,0 +1,12 @@
+[
+    {
+        "type": "devices.properties.event",
+        "instance": "open",
+        "read": {
+            "values": {
+                "opened": true,
+                "closed": false
+            }
+        }
+    }
+]

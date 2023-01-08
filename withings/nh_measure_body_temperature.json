@@ -1,0 +1,8 @@
+[
+    {
+        "type": "devices.properties.float",
+        "instance": "temperature",
+        "unit": "unit.temperature.celsius",
+        "read": {}
+    }
+]

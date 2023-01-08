@@ -1,0 +1,9 @@
+[
+    {
+        "type": "devices.capabilities.color_setting",
+        "instance": "hsv",
+        "both": {
+            "scale": 360
+        }
+    }
+]

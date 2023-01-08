@@ -1,0 +1,11 @@
+[
+    {
+        "type": "devices.capabilities.on_off",
+        "instance": "on",
+        "write": {
+            "values": {
+                "true": true
+            }
+        }
+    }
+]

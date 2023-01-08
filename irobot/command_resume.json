@@ -1,0 +1,11 @@
+[
+    {
+        "type": "devices.capabilities.toggle",
+        "instance": "pause",
+        "write": {
+            "values": {
+                "false": true
+            }
+        }
+    }
+]

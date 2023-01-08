@@ -1,0 +1,22 @@
+[
+    {
+        "type": "devices.capabilities.on_off",
+        "instance": "on",
+        "read": {
+            "values": {
+                "true": ["clean", "quick", "spot", "train", "manual", "paused", "stopped"],
+                "false": "*"
+            }
+        }
+    },
+    {
+        "type": "devices.capabilities.toggle",
+        "instance": "pause",
+        "read": {
+            "values": {
+                "true": ["paused", "stopped"],
+                "false": "*"
+            }
+        }
+    }
+]

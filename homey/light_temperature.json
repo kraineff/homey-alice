@@ -1,0 +1,10 @@
+[
+    {
+        "type": "devices.capabilities.color_setting",
+        "instance": "temperature_k",
+        "range": [1000, 5000],
+        "both": {
+            "scale": 5000
+        }
+    }
+]
