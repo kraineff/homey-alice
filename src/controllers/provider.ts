@@ -61,7 +61,7 @@ export class ProviderController {
         await Bun.write(this.storageFile, JSON.stringify(newStorageItems));
     }
 
-    async getDevices(token: string) {
+    async discoveryDevices(token: string) {
         const homeyApi = await this.getHomeyAPI(token);
         const homeyDevices: Record<string, HomeyAPIV2.ManagerDevices.Device> = await homeyApi.devices.getDevices();
         const homeyZones: Record<string, HomeyAPIV2.ManagerZones.Zone> = await homeyApi.zones.getZones();
@@ -114,7 +114,7 @@ export class ProviderController {
         return payload;
     }
 
-    async getStates(token: string, body: QueryDevicesRequest) {
+    async queryDevices(token: string, body: QueryDevicesRequest) {
         const homeyApi = await this.getHomeyAPI(token);
         const homeyDevices: Record<string, any> = await homeyApi.devices.getDevices();
         
@@ -150,7 +150,7 @@ export class ProviderController {
         return payload;
     }
 
-    async setStates(token: string, body: ActionDevicesRequest) {
+    async actionDevices(token: string, body: ActionDevicesRequest) {
         const homeyApi = await this.getHomeyAPI(token);
 
         const payload: ActionDevicesResponse["payload"] = {

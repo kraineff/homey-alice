@@ -31,7 +31,8 @@ class ConverterWrapper<SetValue> {
         this.handleGet = function (capabilities) {
             const capability = capabilities[capabilityId];
             let capabilityValue = capability?.value ?? null;
-            if (capability?.getable === false) capabilityValue = false;
+            if (capability?.getable === false && capability?.type === "boolean")
+                capabilityValue = false;
 
             const prevValue = currentHandler(capabilities);
             const value = capabilityValue !== null ? handler(capability) : null;

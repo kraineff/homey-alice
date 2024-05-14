@@ -7,9 +7,14 @@ const userHeaders = t.Object({
     "user-agent":    t.String({ pattern: "Yandex LLC", default: "" })
 });
 
-export const providerRoute = (clientId: string, clientSecret: string) => {
+export const providerRoute = async (clientId: string, clientSecret: string) => {
     const storageFile = Bun.file("storage.json");
     const controller = new ProviderController(clientId, clientSecret, storageFile);
+
+    // Инициализация файла хранилища
+    const storageExists = await storageFile.exists();
+    if (!storageExists)
+        await Bun.write(storageFile, JSON.stringify([]));
     
     return new Elysia({ prefix: "/v1.0" })
         .head("/", () => {})
@@ -25,15 +30,15 @@ export const providerRoute = (clientId: string, clientSecret: string) => {
             })
             .group("/devices", app => app
                 .get("/", async ({ token, requestId }) => {
-                    const payload = await controller.getDevices(token);
+                    const payload = await controller.discoveryDevices(token);
                     return { request_id: requestId, payload };
                 })
                 .post("/query", async ({ token, requestId, body }) => {
-                    const payload = await controller.getStates(token, <any>body);
+                    const payload = await controller.queryDevices(token, <any>body);
                     return { request_id: requestId, payload };
                 })
                 .post("/action", async ({ token, requestId, body }) => {
-                    const payload = await controller.setStates(token, <any>body);
+                    const payload = await controller.actionDevices(token, <any>body);
                     return { request_id: requestId, payload };
                 })
             )
