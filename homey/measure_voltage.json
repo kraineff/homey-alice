@@ -1,8 +1,0 @@
-[
-    {
-        "type": "devices.properties.float",
-        "instance": "voltage",
-        "unit": "unit.volt",
-        "read": {}
-    }
-]

@@ -1,7 +1,0 @@
-[
-    {
-        "type": "devices.capabilities.toggle",
-        "instance": "mute",
-        "both": {}
-    }
-]

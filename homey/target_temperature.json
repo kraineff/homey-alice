@@ -1,9 +1,0 @@
-[
-    {
-        "type": "devices.capabilities.range",
-        "instance": "temperature",
-        "unit": "unit.temperature.celsius",
-        "range": [4, 35, 0.5],
-        "both": {}
-    }
-]

@@ -1,8 +1,0 @@
-[
-    {
-        "type": "devices.properties.float",
-        "instance": "amperage",
-        "unit": "unit.ampere",
-        "read": {}
-    }
-]

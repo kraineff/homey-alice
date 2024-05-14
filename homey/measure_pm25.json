@@ -1,8 +1,0 @@
-[
-    {
-        "type": "devices.properties.float",
-        "instance": "pm2.5_density",
-        "unit": "unit.density.mcg_m3",
-        "read": {}
-    }
-]

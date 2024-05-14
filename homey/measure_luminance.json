@@ -1,8 +1,0 @@
-[
-    {
-        "type": "devices.properties.float",
-        "instance": "illumination",
-        "unit": "unit.illumination.lux",
-        "read": {}
-    }
-]

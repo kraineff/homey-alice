@@ -1,8 +1,0 @@
-[
-    {
-        "type": "devices.properties.float",
-        "instance": "battery_level",
-        "unit": "unit.percent",
-        "read": {}
-    }
-]

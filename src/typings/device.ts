@@ -1,0 +1,48 @@
+enum Device {
+    Camera = "devices.types.camera",
+    Cooking = "devices.types.cooking",
+    CoffeeMachine = "devices.types.cooking.coffee_maker",
+    Kettle = "devices.types.cooking.kettle",
+    Multicooker = "devices.types.cooking.multicooker",
+    Dishwasher = "devices.types.dishwasher",
+    Humidifier = "devices.types.humidifier",
+    Iron = "devices.types.iron",
+    Light = "devices.types.light",
+    Media = "devices.types.media_device",
+    Receiver = "devices.types.media_device.receiver",
+    Tv = "devices.types.media_device.tv",
+    TvBox = "devices.types.media_device.tv_box",
+    Openable = "devices.types.openable",
+    Curtain = "devices.types.openable.curtain",
+    Other = "devices.types.other",
+    PetFeeder = "devices.types.pet_feeder",
+    PetFountain = "devices.types.pet_drinking_fountain",
+    Purifier = "devices.types.purifier",
+
+    Sensor = "devices.types.sensor",
+    SensorButton = "devices.types.sensor.button",
+    SensorClimate = "devices.types.sensor.climate",
+    SensorGas = "devices.types.sensor.gas",
+    SensorIllumination = "devices.types.sensor.illumination",
+    SensorMotion = "devices.types.sensor.motion",
+    SensorOpen = "devices.types.sensor.open",
+    SensorSmoke = "devices.types.sensor.smoke",
+    SensorVibration = "devices.types.sensor.vibration",
+    SensorWaterLeak = "devices.types.sensor.water_leak",
+
+    Meter = "devices.types.smart_meter",
+    MeterColdWater = "devices.types.smart_meter.cold_water",
+    MeterElectricity = "devices.types.smart_meter.electricity",
+    MeterGas = "devices.types.smart_meter.gas",
+    MeterHeat = "devices.types.smart_meter.heat",
+    MeterHotWater = "devices.types.smart_meter.hot_water",
+
+    Socket = "devices.types.socket",
+    Switch = "devices.types.switch",
+    Thermostat = "devices.types.thermostat",
+    Conditioner = "devices.types.thermostat.ac",
+    VacuumCleaner = "devices.types.vacuum_cleaner",
+    WashingMachine = "devices.types.washing_machine"
+}
+
+export default Device;
