@@ -3,7 +3,7 @@
   "module": "src/index.js",
   "scripts": {
     "build": "bun build src/index.ts --target=bun --outfile=server.js --minify",
-    "start": "bun run build && pm2 delete homey && pm2 start \"bun src/index.ts\" --name \"homey\"",
+    "start": "bun run build && pm2 delete homey && pm2 start \"bun server.js\" --name \"homey\"",
     "restart": "bun run build && pm2 restart homey"
   },
   "dependencies": {
