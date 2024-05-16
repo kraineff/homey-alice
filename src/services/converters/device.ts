@@ -10,8 +10,10 @@ export const DeviceConverters = {
             .getHomey("vacuum_state", state => ["paused", "stopped"].includes(state.value))
             .setHomey("command_resume", value => !value && true || null)
             .setHomey("command_pause", value => value && true || null))
-        .createFloat("water_level", "percent", run => run
-            .getHomey("tank_level"))
+        .createFloat("battery_level", "percent", run => run
+            .getHomey("measure_battery"))
+        .createFloat("meter", undefined, run => run
+            .getHomey("measure_mission_minutes"))
         .createEvent("open", ["opened", "closed"], run => run
             .getHomey("alarm_tank_lid_open", state => ["closed", "opened"][Number(state.value)])),
     

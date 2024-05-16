@@ -198,13 +198,15 @@ export class HomeyConverter {
     }
 
     createToggle(instance: string, run: ConverterWrapperHandler<boolean>) {
-        this.appendConverter(run, "devices.properties.toggle", instance, { instance });
+        this.appendConverter(run, "devices.capabilities.toggle", instance, { instance });
         return this;
     }
 
-    createFloat(instance: string, unit: string, run: ConverterWrapperHandler<number>) {
-        unit = `unit.${unit}`;
-        this.appendConverter(run, "devices.properties.float", instance, { instance, unit });
+    createFloat(instance: string, unit: string | undefined, run: ConverterWrapperHandler<number>) {
+        this.appendConverter(run, "devices.properties.float", instance, {
+            instance,
+            ...(unit && { unit: `unit.${unit}` })
+        });
         return this;
     }
 
