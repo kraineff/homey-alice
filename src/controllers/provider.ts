@@ -22,7 +22,7 @@ export class ProviderController {
             const storageItem = storageItems.find(item => item.homeyId === homeyId);
 
             storageItem
-                ? (storageItem.token = token, storageItem.storage = storage)
+                ? (storageItem.token = token, storageItem.storage = { ...storageItem.storage, ...storage })
                 : storageItems.push({ homeyId, token, storage });
             
             await Bun.write(this.storageFile, JSON.stringify(storageItems));
@@ -41,7 +41,7 @@ export class ProviderController {
             store: this.getStorageAdapter(token),
             autoRefreshTokens: false
         });
-
+        
         // @ts-ignore
         const user = await athomApi.getAuthenticatedUserFromStore();
         return user as AthomCloudAPI.User;

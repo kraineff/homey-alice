@@ -139,7 +139,12 @@ export class HomeyConverter {
 
         this.converters[`${type},${instance}`] = {
             type, instance, category,
-            details: { type, parameters },
+            details: {
+                type,
+                retrievable: true,
+                reportable: false,
+                parameters
+            },
             get: handleGet, set: handleSet
         };
     }

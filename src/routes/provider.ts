@@ -24,6 +24,9 @@ export const providerRoute = async (clientId: string, clientSecret: string) => {
                 const requestId = headers["x-request-id"];
                 return { token, requestId };
             })
+            .onError(({ path, error }) => {
+                console.log(`[Провайдер: ${path}] -> Ошибка: ${error.message}`);
+            })
             .post("/unlink", async ({ token, requestId }) => {
                 await controller.unlinkAccount(token);
                 return { request_id: requestId };
