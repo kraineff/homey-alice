@@ -112,12 +112,23 @@ export class HomeyConverter {
     
                 const values = converter.set(state.value);
                 const valuesArray = Object.entries(values);
-                const actionStatus = await Promise
+                const actionResult = await Promise
                     .all(valuesArray.map(async ([capabilityId, value]) => value !== null && setValue(capabilityId, value)))
-                    .then(() => "DONE")
-                    .catch(() => "ERROR");
-
-                response.capabilities.push({ type, state: { instance, action_result: { status: actionStatus } } });
+                    .then(() => ({ status: "DONE" }))
+                    .catch(error => {
+                        const actionResult = {
+                            status: "ERROR",
+                            error_code: "DEVICE_UNREACHABLE"
+                        };
+                        
+                        if (error?.message?.startsWith("Not Found: Device with ID"))
+                            actionResult.error_code = "DEVICE_NOT_FOUND";
+                        
+                        console.log(error?.message);
+                        return actionResult;
+                    });
+                
+                response.capabilities.push({ type, state: { instance, action_result: actionResult } });
             })
         );
 

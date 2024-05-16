@@ -1,6 +1,5 @@
 import { CapabilityState, CapabilityStateAction, DeviceCapability, DeviceProperty } from "./capability";
 import { ActionResult } from ".";
-import { Static, t } from "elysia";
 
 export type UnlinkResponse = {
     request_id: string;
@@ -62,10 +61,11 @@ export type ActionDevicesRequest = {
 export type ActionDevicesResponse = {
     request_id: string;
     payload: {
-        devices: Array<{ id: string } & (
-            | { capabilities: Array<CapabilityStateAction> }
-            | { action_result: ActionResult }
-        )>;
+        devices: Array<{
+            id: string;
+            capabilities?: Array<CapabilityStateAction>;
+            action_result?: ActionResult;
+        }>;
     };
 };
 

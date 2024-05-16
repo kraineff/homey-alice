@@ -116,7 +116,7 @@ export class ProviderController {
 
     async queryDevices(token: string, body: QueryDevicesRequest) {
         const homeyApi = await this.getHomeyAPI(token);
-        const homeyDevices: Record<string, any> = await homeyApi.devices.getDevices();
+        const homeyDevices: Record<string, HomeyAPIV2.ManagerDevices.Device> = await homeyApi.devices.getDevices();
         
         const payload: QueryDevicesResponse["payload"] = {
             devices: []
@@ -125,7 +125,7 @@ export class ProviderController {
         const queries = body.devices;
         queries.map(query => {
             const deviceId = query.id;
-            const deviceCapabilities = homeyDevices[deviceId]?.capabilitiesObj || {};
+            const homeyDevice = homeyDevices[deviceId];
 
             const device: QueryDevicesResponse["payload"]["devices"][0] = {
                 id: deviceId,
@@ -133,16 +133,20 @@ export class ProviderController {
                 properties: []
             };
 
-            // Конвертация
-            const converterIds: string[] = query.custom_data;
-            converterIds.map(converterId => {
-                const converter = HomeyConverters[converterId];
-                if (converter) {
-                    const result = converter.getState(deviceCapabilities);
-                    device.capabilities = [...device.capabilities!, ...result.capabilities];
-                    device.properties = [...device.properties!, ...result.properties];
-                }
-            });
+            if (!homeyDevice) device.error_code = "DEVICE_NOT_FOUND";
+            if (homeyDevice && !homeyDevice.ready) device.error_code = "DEVICE_UNREACHABLE";
+
+            if (!device.error_code) {
+                const converterIds: string[] = query.custom_data;
+                converterIds.map(converterId => {
+                    const converter = HomeyConverters[converterId];
+                    if (converter) {
+                        const result = converter.getState(homeyDevice.capabilitiesObj);
+                        device.capabilities = [...device.capabilities!, ...result.capabilities];
+                        device.properties = [...device.properties!, ...result.properties];
+                    }
+                });
+            }
 
             payload.devices.push(device);
         });
