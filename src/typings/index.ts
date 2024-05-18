@@ -5,5 +5,5 @@ export type ActionResult = {
 };
 
 export * from "./capability";
-export * from "./api";
+export * from "./provider";
 export * from "./device";

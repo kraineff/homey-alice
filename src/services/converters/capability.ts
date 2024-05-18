@@ -7,8 +7,12 @@ export const CapabilityConverters = {
             .setHomey("onoff")),
     
     dim: new HomeyConverter()
-        .createRange("brightness", "percent", [0, 100, 1], run => run
-            .getHomey("dim", state => state.value * 100)
+        .createRange("brightness", run => run
+            .setParams({
+                unit: "percent",
+                range: [0, 100, 1],
+            })
+            .getHomey("dim", capability => capability.value * 100)
             .setHomey("dim", value => value / 100)),
     
     light_hue: new HomeyConverter()
@@ -22,106 +26,143 @@ export const CapabilityConverters = {
         .createState(run => run
             .getHomey("thermostat_mode", state => ["heat", "auto", "cool"].includes(state.value))
             .setHomey("thermostat_mode", value => ["off", "heat"][Number(value)]))
-        .createMode("thermostat", ["auto", "heat", "cool"], run => run
+        .createMode("thermostat", run => run
+            .setParams({ modes: ["auto", "heat", "cool"] })
             .getHomey("thermostat_mode", state => ["auto", "heat", "cool"].includes(state.value) && state.value || null)
             .setHomey("thermostat_mode")),
         
     target_temperature: new HomeyConverter()
-        .createRange("temperature", "temperature.celsius", [4, 35, 0.5], run => run
+        .createRange("temperature", run => run
+            .setParams({
+                unit: "temperature.celsius",
+                parse: ({ target_temperature }) => ({
+                    range: [
+                        target_temperature.min ?? 4,
+                        target_temperature.max ?? 35,
+                        target_temperature.step ?? 0.5
+                    ]
+                }),
+            })
             .getHomey("target_temperature")
             .setHomey("target_temperature")),
 
     measure_temperature: new HomeyConverter()
-        .createFloat("temperature", "temperature.celsius", run => run
+        .createFloat("temperature", run => run
+            .setParams({ unit: "temperature.celsius" })
             .getHomey("measure_temperature")),
 
     measure_co: new HomeyConverter()
-        .createFloat("co2_level", "ppm", run => run
+        .createFloat("co2_level", run => run
+            .setParams({ unit: "ppm" })
             .getHomey("measure_co")),
 
     measure_co2: new HomeyConverter()
-        .createFloat("co2_level", "ppm", run => run
+        .createFloat("co2_level", run => run
+            .setParams({ unit: "ppm" })
             .getHomey("measure_co2")),
 
     measure_pm25: new HomeyConverter()
-        .createFloat("pm2.5_density", "density.mcg_m3", run => run
+        .createFloat("pm2.5_density", run => run
+            .setParams({ unit: "density.mcg_m3" })
             .getHomey("measure_pm25")),
 
     measure_humidity: new HomeyConverter()
-        .createFloat("humidity", "percent", run => run
+        .createFloat("humidity", run => run
+            .setParams({ unit: "percent" })
             .getHomey("measure_humidity")),
 
     measure_pressure: new HomeyConverter()
-        .createFloat("pressure", "pressure.bar", run => run
+        .createFloat("pressure", run => run
+            .setParams({ unit: "pressure.bar" })
             .getHomey("measure_pressure", state => state.value * 0.001)),
 
     measure_battery: new HomeyConverter()
-        .createFloat("battery_level", "percent", run => run
+        .createFloat("battery_level", run => run
+            .setParams({ unit: "percent" })
             .getHomey("measure_battery")),
 
     measure_power: new HomeyConverter()
-        .createFloat("power", "watt", run => run
+        .createFloat("power", run => run
+            .setParams({ unit: "watt" })
             .getHomey("measure_power")),
 
     measure_voltage: new HomeyConverter()
-        .createFloat("voltage", "volt", run => run
+        .createFloat("voltage", run => run
+            .setParams({ unit: "volt" })
             .getHomey("measure_voltage")),
 
     measure_current: new HomeyConverter()
-        .createFloat("amperage", "ampere", run => run
+        .createFloat("amperage", run => run
+            .setParams({ unit: "ampere" })
             .getHomey("measure_current")),
 
     measure_luminance: new HomeyConverter()
-        .createFloat("illumination", "illumination.lux", run => run
+        .createFloat("illumination", run => run
+            .setParams({ unit: "illumination.lux" })
             .getHomey("measure_luminance")),
 
     alarm_motion: new HomeyConverter()
-        .createEvent("motion", ["not_detected", "detected"], run => run
+        .createEvent("motion", run => run
+            .setParams({ events: ["not_detected", "detected"] })
             .getHomey("alarm_motion", state => ["not_detected", "detected"][Number(state.value)])),
 
     alarm_contact: new HomeyConverter()
-        .createEvent("open", ["closed", "opened"], run => run
+        .createEvent("open", run => run
+            .setParams({ events: ["closed", "opened"] })
             .getHomey("alarm_contact", state => ["closed", "opened"][Number(state.value)])),
 
     alarm_co: new HomeyConverter()
-        .createEvent("gas", ["not_detected", "detected"], run => run
+        .createEvent("gas", run => run
+            .setParams({ events: ["not_detected", "detected"] })
             .getHomey("alarm_co", state => ["not_detected", "detected"][Number(state.value)])),
 
     alarm_co2: new HomeyConverter()
-        .createEvent("gas", ["not_detected", "detected"], run => run
+        .createEvent("gas", run => run
+            .setParams({ events: ["not_detected", "detected"] })
             .getHomey("alarm_co2", state => ["not_detected", "detected"][Number(state.value)])),
 
     alarm_tamper: new HomeyConverter()
-        .createEvent("open", ["closed", "opened"], run => run
+        .createEvent("open", run => run
+            .setParams({ events: ["closed", "opened"] })
             .getHomey("alarm_tamper", state => ["closed", "opened"][Number(state.value)])),
 
     alarm_smoke: new HomeyConverter()
-        .createEvent("smoke", ["not_detected", "detected"], run => run
+        .createEvent("smoke", run => run
+            .setParams({ events: ["not_detected", "detected"] })
             .getHomey("alarm_smoke", state => ["not_detected", "detected"][Number(state.value)])),
 
     alarm_water: new HomeyConverter()
-        .createEvent("water_leak", ["dry", "leak"], run => run
+        .createEvent("water_leak", run => run
+            .setParams({ events: ["dry", "leak"] })
             .getHomey("alarm_water", state => ["dry", "leak"][Number(state.value)])),
 
     alarm_battery: new HomeyConverter()
-        .createEvent("battery_level", ["normal", "low"], run => run
+        .createEvent("battery_level", run => run
+            .setParams({ events: ["normal", "low"] })
             .getHomey("alarm_battery", state => ["normal", "low"][Number(state.value)])),
 
     meter_power: new HomeyConverter()
-        .createFloat("electricity_meter", "kilowatt_hour", run => run
+        .createFloat("electricity_meter", run => run
+            .setParams({ unit: "kilowatt_hour" })
             .getHomey("meter_power")),
 
     meter_water: new HomeyConverter()
-        .createFloat("water_meter", "cubic_meter", run => run
+        .createFloat("water_meter", run => run
+            .setParams({ unit: "cubic_meter" })
             .getHomey("meter_water")),
 
     meter_gas: new HomeyConverter()
-        .createFloat("gas_meter", "cubic_meter", run => run
+        .createFloat("gas_meter", run => run
+            .setParams({ unit: "cubic_meter" })
             .getHomey("meter_gas")),
 
     volume_set: new HomeyConverter()
-        .createRange("volume", "percent", [0, 100, 1], run => run
-            .getHomey("volume_set", state => state.value * 100)
+        .createRange("volume", run => run
+            .setParams({
+                unit: "percent",
+                range: [0, 100, 1]
+            })
+            .getHomey("volume_set", capability => capability.value * 100)
             .setHomey("volume_set", value => value / 100)),
     
     volume_mute: new HomeyConverter()
@@ -145,8 +186,12 @@ export const CapabilityConverters = {
             .setHomey("windowcoverings_closed")),
     
     windowcoverings_set: new HomeyConverter()
-        .createRange("open", "percent", [0, 100, 1], run => run
-            .getHomey("windowcoverings_set", state => state.value * 100)
+        .createRange("open", run => run
+            .setParams({
+                unit: "percent",
+                range: [0, 100, 1]
+            })
+            .getHomey("windowcoverings_set", capability => capability.value * 100)
             .setHomey("windowcoverings_set", value => value / 100)),
 
     button: new HomeyConverter()

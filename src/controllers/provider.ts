@@ -1,6 +1,6 @@
 import { BunFile } from "bun";
 import { AthomCloudAPI, HomeyAPIV2 } from "homey-api";
-import { ActionDevicesRequest, ActionDevicesResponse, DevicesResponse, QueryDevicesRequest, QueryDevicesResponse } from "../typings/api";
+import { ActionDevice, ActionRequest, ActionResponse, DiscoveryDevice, DiscoveryResponse, QueryDevice, QueryRequest, QueryResponse } from "../typings/provider";
 import { HomeyConverters } from "../services/converters";
 import { getDeviceType } from "../services/utils";
 
@@ -13,6 +13,7 @@ export class ProviderController {
         storageAdapter.get = async () => {
             const storageItems: any[] = await this.storageFile.json();
             const storageItem = storageItems.find(item => item.token === token);
+            storageItem && console.log(`[Хранилище: ${storageItem.storage?.user?.firstname} ${storageItem.storage?.user?.lastname}] -> Получение`);
             return storageItem && storageItem.storage || {};
         };
 
@@ -20,6 +21,7 @@ export class ProviderController {
             const homeyId = storage.user.homeys[0].id;
             const storageItems: any[] = await this.storageFile.json();
             const storageItem = storageItems.find(item => item.homeyId === homeyId);
+            console.log(`[Хранилище: ${storage.user?.firstname} ${storage.user?.lastname}] -> Установка`);
 
             storageItem
                 ? (storageItem.token = token, storageItem.storage = { ...storageItem.storage, ...storage })
@@ -66,13 +68,13 @@ export class ProviderController {
         const homeyDevices: Record<string, HomeyAPIV2.ManagerDevices.Device> = await homeyApi.devices.getDevices();
         const homeyZones: Record<string, HomeyAPIV2.ManagerZones.Zone> = await homeyApi.zones.getZones();
         
-        const payload: DevicesResponse["payload"] = {
+        const payload: DiscoveryResponse["payload"] = {
             user_id: homeyApi.id,
             devices: []
         };
 
         Object.values(homeyDevices).map(homeyDevice => {
-            const device: DevicesResponse["payload"]["devices"][0] = {
+            const device: DiscoveryDevice = {
                 id: homeyDevice.id,
                 name: homeyDevice.name,
                 room: homeyZones[homeyDevice.zone].name,
@@ -85,8 +87,6 @@ export class ProviderController {
             // Конвертер шаблона устройства
             const driverId = homeyDevice.driverId.replace("homey:app:", "");
             const driverConverter = HomeyConverters[driverId];
-            const driverType = driverConverter?.getType();
-            if (driverType) device.type = driverType;
 
             // Специальные команды
             const note = homeyDevice.note;
@@ -97,11 +97,12 @@ export class ProviderController {
             }
 
             // Конвертация
-            const capabilities: Array<any> = driverConverter ? [{ id: driverId }] : Object.values(homeyDevice.capabilitiesObj);
+            const homeyCapabilities = homeyDevice.capabilitiesObj;
+            const capabilities: Array<any> = driverConverter ? [{ id: driverId }] : Object.values(homeyCapabilities);
             capabilities.map(capability => {
                 const converter = HomeyConverters[capability.id];
                 if (converter) {
-                    const result = converter.getDetails();
+                    const result = converter.getParameters(homeyCapabilities);
                     device.custom_data.push(capability.id);
                     device.capabilities = [...device.capabilities, ...result.capabilities];
                     device.properties = [...device.properties, ...result.properties];
@@ -114,11 +115,11 @@ export class ProviderController {
         return payload;
     }
 
-    async queryDevices(token: string, body: QueryDevicesRequest) {
+    async queryDevices(token: string, body: QueryRequest) {
         const homeyApi = await this.getHomeyAPI(token);
         const homeyDevices: Record<string, HomeyAPIV2.ManagerDevices.Device> = await homeyApi.devices.getDevices();
         
-        const payload: QueryDevicesResponse["payload"] = {
+        const payload: QueryResponse["payload"] = {
             devices: []
         };
 
@@ -127,21 +128,21 @@ export class ProviderController {
             const deviceId = query.id;
             const homeyDevice = homeyDevices[deviceId];
 
-            const device: QueryDevicesResponse["payload"]["devices"][0] = {
+            const device: QueryDevice = {
                 id: deviceId,
                 capabilities: [],
                 properties: []
             };
 
             if (!homeyDevice) device.error_code = "DEVICE_NOT_FOUND";
-            if (homeyDevice && !homeyDevice.ready) device.error_code = "DEVICE_UNREACHABLE";
+            if (homeyDevice && (!homeyDevice.ready || !homeyDevice.available)) device.error_code = "DEVICE_UNREACHABLE";
 
             if (!device.error_code) {
                 const converterIds: string[] = query.custom_data;
                 converterIds.map(converterId => {
                     const converter = HomeyConverters[converterId];
                     if (converter) {
-                        const result = converter.getState(homeyDevice.capabilitiesObj);
+                        const result = converter.getStates(homeyDevice.capabilitiesObj);
                         device.capabilities = [...device.capabilities!, ...result.capabilities];
                         device.properties = [...device.properties!, ...result.properties];
                     }
@@ -154,10 +155,10 @@ export class ProviderController {
         return payload;
     }
 
-    async actionDevices(token: string, body: ActionDevicesRequest) {
+    async actionDevices(token: string, body: ActionRequest) {
         const homeyApi = await this.getHomeyAPI(token);
 
-        const payload: ActionDevicesResponse["payload"] = {
+        const payload: ActionResponse["payload"] = {
             devices: []
         };
 
@@ -166,7 +167,7 @@ export class ProviderController {
             const deviceId = action.id;
             const deviceCapabilities = action.capabilities;
 
-            const device: ActionDevicesResponse["payload"]["devices"][0] = {
+            const device: ActionDevice = {
                 id: deviceId,
                 capabilities: []
             };
@@ -179,7 +180,7 @@ export class ProviderController {
             await Promise.all(converterIds.map(async converterId => {
                 const converter = HomeyConverters[converterId];
                 if (converter) {
-                    const result = await converter.setState(deviceCapabilities, converterSet);
+                    const result = await converter.setStates(deviceCapabilities, converterSet);
                     device.capabilities = [...device.capabilities!, ...result.capabilities];
                 }
             }));

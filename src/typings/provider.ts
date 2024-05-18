@@ -5,50 +5,54 @@ export type UnlinkResponse = {
     request_id: string;
 };
 
-export type DevicesResponse = {
-    request_id: string;
-    payload: {
-        user_id: string;
-        devices: Array<{
-            id: string;
-            name: string;
-            description?: string;
-            room?: string;
-            type: string;
-            custom_data?: any;
-            capabilities: Array<DeviceCapability>;
-            properties: Array<DeviceProperty>;
-            device_info?: {
-                manufacturer: string;
-                model: string;
-                hw_version?: string;
-                sw_version?: string;
-            };
-        }>;
+export type DiscoveryDevice = {
+    id: string;
+    name: string;
+    description?: string;
+    room?: string;
+    type: string;
+    custom_data?: any;
+    capabilities: Array<DeviceCapability>;
+    properties: Array<DeviceProperty>;
+    device_info?: {
+        manufacturer: string;
+        model: string;
+        hw_version?: string;
+        sw_version?: string;
     };
 };
 
-export type QueryDevicesRequest = {
+export type DiscoveryResponse = {
+    request_id: string;
+    payload: {
+        user_id: string;
+        devices: Array<DiscoveryDevice>;
+    };
+};
+
+export type QueryRequest = {
     devices: Array<{
         id: string;
         custom_data?: any;
     }>;
 };
 
-export type QueryDevicesResponse = {
+export type QueryDevice = {
+    id: string;
+    capabilities?: Array<CapabilityState>;
+    properties?: Array<CapabilityState>;
+    error_code?: string;
+    error_message?: string;
+};
+
+export type QueryResponse = {
     request_id: string;
     payload: {
-        devices: Array<{
-            id: string;
-            capabilities?: Array<CapabilityState>;
-            properties?: Array<CapabilityState>;
-            error_code?: string;
-            error_message?: string;
-        }>;
+        devices: Array<QueryDevice>;
     };
 };
 
-export type ActionDevicesRequest = {
+export type ActionRequest = {
     payload: {
         devices: Array<{
             id: string;
@@ -58,14 +62,16 @@ export type ActionDevicesRequest = {
     };
 };
 
-export type ActionDevicesResponse = {
+export type ActionDevice = {
+    id: string;
+    capabilities?: Array<CapabilityStateAction>;
+    action_result?: ActionResult;
+};
+
+export type ActionResponse = {
     request_id: string;
     payload: {
-        devices: Array<{
-            id: string;
-            capabilities?: Array<CapabilityStateAction>;
-            action_result?: ActionResult;
-        }>;
+        devices: Array<ActionDevice>;
     };
 };
 

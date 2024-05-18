@@ -1,220 +1,271 @@
-import { HomeyAPIV2 } from "homey-api";
-import { CapabilityState, DeviceCapability, DeviceProperty } from "../typings";
+import { CapabilityState, CapabilityStateAction } from "../typings";
 
-type HomeyCapability = HomeyAPIV2.ManagerDevices.Capability & { value: any };
-
-type GetValueHandler = (capabilities: Record<string, HomeyCapability>) => any;
-type SetValueHandler = (value: any) => Record<string, any>;
-type Converter = {
-    type: string;
-    instance: string;
-    category: "capabilities" | "properties";
-    details: DeviceCapability | DeviceProperty;
-    get: GetValueHandler;
-    set: SetValueHandler;
-};
-
-class ConverterWrapper<SetValue> {
-    public handleGet: GetValueHandler;
-    public handleSet: SetValueHandler;
-
-    constructor() {
-        this.handleGet = () => null;
-        this.handleSet = () => ({});
-    }
-
-    getHomey(
-        capabilityId: string,
-        handler: (capability: HomeyCapability) => SetValue = (capability => capability.value)
-    ) {
-        const currentHandler = this.handleGet;
-        this.handleGet = function (capabilities) {
-            const capability = capabilities[capabilityId];
-            let capabilityValue = capability?.value ?? null;
-            if (capability?.getable === false && capability?.type === "boolean")
-                capabilityValue = false;
-
-            const prevValue = currentHandler(capabilities);
-            const value = capabilityValue !== null ? handler(capability) : null;
-            
-            if (value === null) return prevValue;
-            if (typeof value === "number") return Math.abs(value);
-            if (typeof value === "object" && typeof prevValue === "object") return { ...prevValue, ...value };
-            return value;
-        }
-
-        return this;
-    }
-
-    setHomey(
-        capabilityId: string,
-        handler: (value: Required<SetValue>) => any = (value => value)
-    ) {
-        const currentHandler = this.handleSet;
-        this.handleSet = function (_value) {
-            const capabilityValue = _value ?? null;
-            const currentValue = currentHandler(capabilityValue);
-            const value = handler(capabilityValue);
-            currentValue[capabilityId] = value;
-            return currentValue;
-        }
-
-        return this;
-    }
-}
-
-type ConverterWrapperHandler<SetValue = any> = (run: ConverterWrapper<SetValue>) => typeof run;
+type ConverterBuilder<Params, SetValue> =
+    (run: Converter<Params, SetValue>) => typeof run;
 
 export class HomeyConverter {
-    private converters: Record<string, Converter> = {};
-    private type?: string;
+    private converters: Record<string, any> = {};
 
-    getDetails() {
+    use(converter: HomeyConverter) {
+        this.converters = { ...this.converters, ...converter.converters };
+        return this;
+    }
+
+    createState(run: ConverterBuilder<{ split?: boolean }, boolean>) {
+        const type = "devices.capabilities.on_off";
+        const instance = "on";
+        this.converters[`${type},${instance}`] = run(new Converter(type, instance));
+        return this;
+    }
+
+    createColor(run: ConverterBuilder<{}, Partial<{ h: number, s: number, v: number }>>) {
+        const type = "devices.capabilities.color_setting";
+        const instance = "hsv";
+        this.converters[`${type},${instance}`] = run(new Converter(type, instance));
+        return this;
+    }
+
+    createVideo(run: ConverterBuilder<{ protocols: string[] }, { protocols: string[] }>) {
+        const type = "devices.capabilities.video_stream";
+        const instance = "get_stream";
+        this.converters[`${type},${instance}`] = run(new Converter(type, instance));
+        return this;
+    }
+
+    createMode(instance: string, run: ConverterBuilder<{ modes: string[] }, string>) {
+        const type = "devices.capabilities.mode";
+        this.converters[`${type},${instance}`] = run(new Converter(type, instance));
+        return this;
+    }
+
+    createRange(instance: string, run: ConverterBuilder<{
+        unit?: string;
+        random_access?: boolean;
+        range?: [number, number, number];
+    }, number>) {
+        const type = "devices.capabilities.range";
+        this.converters[`${type},${instance}`] = run(new Converter(type, instance));
+        return this;
+    }
+
+    createToggle(instance: string, run: ConverterBuilder<{}, boolean>) {
+        const type = "devices.capabilities.toggle";
+        this.converters[`${type},${instance}`] = run(new Converter(type, instance));
+        return this;
+    }
+
+    createFloat(instance: string, run: ConverterBuilder<{ unit?: string }, number>) {
+        const type = "devices.properties.float";
+        this.converters[`${type},${instance}`] = run(new Converter(type, instance));
+        return this;
+    }
+
+    createEvent(instance: string, run: ConverterBuilder<{ events: string[] }, string>) {
+        const type = "devices.properties.event";
+        this.converters[`${type},${instance}`] = run(new Converter(type, instance));
+        return this;
+    }
+
+    getParameters(capabilities: any) {
         const converters = Object.values(this.converters);
-        const response: Record<string, any[]> = {
+        const response: Record<"capabilities" | "properties", Array<any>> = {
             capabilities: [],
-            properties: []
+            properties: [],
         };
 
         converters.map(converter => {
-            const capability = converter.details;
-            response[converter.category].push(capability);
+            const parameters = converter.getParams(capabilities);
+            response[converter.category as keyof typeof response].push(parameters);
         });
 
         return response;
     }
 
-    getState(capabilities: Record<string, any>) {
+    getStates(capabilities: any) {
         const converters = Object.values(this.converters);
-        const response: Record<string, any[]> = {
+        const response: Record<"capabilities" | "properties", Array<CapabilityState>> = {
             capabilities: [],
-            properties: []
+            properties: [],
         };
 
-        converters.map(({ type, instance, category, get }) => {
-            const value = get(capabilities);
-            value !== null && response[category].push({ type, state: { instance, value } });
+        converters.map(converter => {
+            const { type, instance, category } = converter;
+            const value = converter.getState(capabilities);
+            value !== null && response[category as keyof typeof response].push({ type, state: { instance, value } });
         });
 
         return response;
     }
 
-    async setState(capabilities: Array<CapabilityState>, setValue: (capabilityId: string, value: any) => Promise<any>) {
-        const response: Record<string, any[]> = {
+    async setStates(capabilities: Array<CapabilityState>, handler: (capabilityId: string, value: any) => Promise<any>) {
+        const response: Record<"capabilities", Array<CapabilityStateAction>> = {
             capabilities: []
         };
 
         await Promise.all(
-            capabilities.map(async ({ type, state }) => {
-                const instance = state.instance;
+            capabilities.map(async capability => {
+                const type = capability.type;
+                const instance = capability.state.instance;
                 const converter = this.converters[`${type},${instance}`];
                 if (!converter) return;
-    
-                const values = converter.set(state.value);
-                const valuesArray = Object.entries(values);
-                const actionResult = await Promise
-                    .all(valuesArray.map(async ([capabilityId, value]) => value !== null && setValue(capabilityId, value)))
+
+                const values = converter.setState(capability.state.value);
+                const actionValues = Object.entries(values);
+                const actionResult: any = await Promise
+                    .all(actionValues.map(async ([capabilityId, value]) => value !== null && handler(capabilityId, value)))
                     .then(() => ({ status: "DONE" }))
                     .catch(error => {
-                        const actionResult = {
+                        const result = {
                             status: "ERROR",
                             error_code: "DEVICE_UNREACHABLE"
                         };
                         
-                        if (error?.message?.startsWith("Not Found: Device with ID"))
-                            actionResult.error_code = "DEVICE_NOT_FOUND";
+                        const message = error?.message;
+                        if (message) {
+                            if (message.startsWith("Not Found: Device with ID"))
+                                result.error_code = "DEVICE_NOT_FOUND";
+                            if (message.startsWith("Power on in progress..."))
+                                result.error_code = "DEVICE_BUSY";
+                        }
                         
                         console.log(error?.message);
-                        return actionResult;
+                        return result;
                     });
-                
+
                 response.capabilities.push({ type, state: { instance, action_result: actionResult } });
             })
         );
 
         return response;
     }
+}
 
-    setType(type: string) {
-        this.type = type;
-        return this;
-    }
+type ParamsHandler<Params> = (capabilities: Record<string, any>) => Partial<Params>;
 
-    getType() {
-        return this.type && `devices.types.${this.type}`;
-    }
+class Converter<Params, SetValue> {
+    readonly category: string;
+    private parameters: any;
+    private parametersRaw: any;
+    private handleParams: ParamsHandler<Params>;
+    private handleGet: (capabilities: Record<string, any>) => any;
+    private handleSet: (value: any) => Record<string, any>;
 
-    private appendConverter<T>(run: ConverterWrapperHandler<T>, type: string, instance: string, parameters: any) {
-        const { handleGet, handleSet } = run(new ConverterWrapper());
-        const category = type.split(".")[1] as any;
-
-        this.converters[`${type},${instance}`] = {
-            type, instance, category,
-            details: {
-                type,
-                retrievable: true,
-                reportable: false,
-                parameters
-            },
-            get: handleGet, set: handleSet
+    constructor(readonly type: string, readonly instance: string) {
+        this.category = type.split(".")[1];
+        this.parameters = {
+            type,
+            retrievable: true, reportable: false,
+            parameters: {}
         };
+        this.parametersRaw = {};
+        this.handleParams = () => ({});
+        this.handleGet = () => null;
+        this.handleSet = () => ({});
     }
-    
-    createState(run: ConverterWrapperHandler<boolean>) {
-        const instance = "on";
-        this.appendConverter(run, "devices.capabilities.on_off", instance, {});
+
+    setParams(params: Params & { parse?: ParamsHandler<Params> }) {
+        const { parse, ...parameters } = params;
+        const prevHandler = this.handleParams;
+        
+        this.parametersRaw = parameters;
+        parse && (this.handleParams = function (capabilities) {
+            const prevValue = prevHandler(capabilities);
+            const value = parse(capabilities);
+            return { ...prevValue, ...value };
+        })
+
         return this;
     }
 
-    createColor(run: ConverterWrapperHandler<Partial<{ h: number, s: number, v: number }>>) {
-        const instance = "hsv";
-        this.appendConverter(run, "devices.capabilities.color_setting", instance, { color_model: instance });
+    getHomey(capabilityId: string, handler?: (capability: any) => SetValue | null) {
+        const prevHandler = this.handleGet;
+        handler = handler ?? (capability => capability.value);
+
+        this.handleGet = function (capabilities) {
+            const capability = capabilities[capabilityId];
+
+            let capabilityValue = capability?.value ?? null;
+            if (capability?.getable === false && capability?.type === "boolean")
+                capabilityValue = false;
+
+            const prevValue = prevHandler(capabilities);
+            const value = capabilityValue !== null ? handler(capability) : null;
+
+            if (value === null) return prevValue;
+            if (typeof value === "number") return Math.abs(value);
+            if (typeof value === "object" && typeof prevValue === "object") return { ...prevValue, ...value };
+            return value;
+        }
+        
         return this;
     }
 
-    createVideo(protocols: string[], run: ConverterWrapperHandler<{ protocols: string[] }>) {
-        const instance = "get_stream";
-        this.appendConverter(run, "devices.capabilities.video_stream", instance, { protocols });
+    setHomey(capabilityId: string, handler?: (value: Required<SetValue>) => any | null) {
+        const prevHandler = this.handleSet;
+        handler = handler ?? (value => value);
+
+        this.handleSet = function (capabilityValue) {
+            capabilityValue = capabilityValue ?? null;
+            const prevValue = prevHandler(capabilityValue);
+            const value = handler(capabilityValue);
+            prevValue[capabilityId] = value;
+            return prevValue;
+        }
+        
         return this;
     }
 
-    createMode(instance: string, modes: string[], run: ConverterWrapperHandler<string>) {
-        this.appendConverter(run, "devices.capabilities.mode", instance, {
-            instance,
-            modes: modes.map(mode => ({ value: mode }))
-        });
-        return this;
+    getParams(capabilities: any) {
+        const parametersRaw: Record<string, any> = {
+            ...this.parametersRaw,
+            ...this.handleParams(capabilities)
+        };
+        
+        const parameters = this.parameters;
+        parameters.parameters = {
+            ...parameters.parameters,
+            ...(["devices.capabilities.mode",
+                 "devices.capabilities.range",
+                 "devices.capabilities.toggle",
+                 "devices.properties.float",
+                 "devices.properties.event"].includes(this.type) && {
+                instance: this.instance
+            }),
+            ...(("devices.capabilities.color_setting" === this.type) && {
+                color_model: this.instance
+            }),
+            ...((parametersRaw.split ?? undefined) && {
+                split: parametersRaw.split
+            }),
+            ...((parametersRaw.random_access ?? undefined) && {
+                random_access: parametersRaw.random_access
+            }),
+            ...((parametersRaw.unit ?? undefined) && {
+                unit: `unit.${parametersRaw.unit}`
+            }),
+            ...((parametersRaw.modes ?? undefined) && {
+                modes: parametersRaw.modes.map((value: string) => ({ value }))
+            }),
+            ...((parametersRaw.events ?? undefined) && {
+                events: parametersRaw.events.map((value: string) => ({ value }))
+            }),
+            ...((parametersRaw.range ?? undefined) && {
+                range: {
+                    min: parametersRaw.range[0],
+                    max: parametersRaw.range[1],
+                    precision: parametersRaw.range[2],
+                }
+            })
+        };
+
+        return parameters;
     }
 
-    createRange(instance: string, unit: string, range: [number, number, number], run: ConverterWrapperHandler<number>) {
-        const [min, max, precision] = range;
-        unit = `unit.${unit}`;
-
-        this.appendConverter(run, "devices.capabilities.range", instance, {
-            instance, unit,
-            range: { min, max, precision }
-        });
-        return this;
+    getState(capabilities: any) {
+        return this.handleGet(capabilities);
     }
 
-    createToggle(instance: string, run: ConverterWrapperHandler<boolean>) {
-        this.appendConverter(run, "devices.capabilities.toggle", instance, { instance });
-        return this;
-    }
-
-    createFloat(instance: string, unit: string | undefined, run: ConverterWrapperHandler<number>) {
-        this.appendConverter(run, "devices.properties.float", instance, {
-            instance,
-            ...(unit && { unit: `unit.${unit}` })
-        });
-        return this;
-    }
-
-    createEvent(instance: string, events: string[], run: ConverterWrapperHandler<string>) {
-        this.appendConverter(run, "devices.properties.event", instance, {
-            instance,
-            events: events.map(event => ({ value: event }))
-        });
-        return this;
+    setState(value: any) {
+        return this.handleSet(value);
     }
 }
