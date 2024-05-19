@@ -1,4 +1,5 @@
 import { CapabilityAction, CapabilityState } from "../typings";
+import { makeStateBody } from "./utils";
 
 type ConverterBuilder<Params, SetValue> =
     (run: Converter<Params, SetValue>) => typeof run;
@@ -74,8 +75,8 @@ export class HomeyConverter {
         };
 
         converters.map(converter => {
-            const parameters = converter.getParams(capabilities);
-            response[converter.category as keyof typeof response].push(parameters);
+            const capability = converter.getParams(capabilities);
+            response[converter.category as keyof typeof response].push(capability);
         });
 
         return response;
@@ -89,9 +90,8 @@ export class HomeyConverter {
         };
 
         converters.map(converter => {
-            const { type, instance, category } = converter;
-            const value = converter.getState(capabilities);
-            value !== null && response[category as keyof typeof response].push({ type, state: { instance, value } });
+            const capability = converter.getState(capabilities);
+            response[converter.category as keyof typeof response].push(capability);
         });
 
         return response;
@@ -105,29 +105,10 @@ export class HomeyConverter {
         response.capabilities = await Promise.all(capabilities.map(async ({ type, state }) => {
             const instance = state.instance;
             const converter = this.converters[`${type},${instance}`];
-            const capability: CapabilityAction = { type, state: { instance, action_result: { status: "ERROR", error_code: "INVALID_ACTION" } } };
-
-            if (converter) {
-                const values = converter.setState(state.value);
-                capability.state.action_result = await Promise
-                    .all(Object.entries(values).map(async ([capabilityId, value]) => value !== null && handler(capabilityId, value)))
-                    .then(() => ({ status: "DONE" }))
-                    .catch(error => {
-                        const errorMessage = error?.message;
-                        const actionResult = { status: "ERROR", error_code: "DEVICE_UNREACHABLE" };
-                        console.log(error?.message);
-                        
-                        if (errorMessage?.startsWith("Not Found: Device with ID"))
-                            actionResult.error_code = "DEVICE_NOT_FOUND";
-
-                        if (errorMessage?.startsWith("Power on in progress..."))
-                            actionResult.error_code = "DEVICE_BUSY";
-
-                        return actionResult;
-                    }) as any;
-            }
+            if (converter) return converter.setState(state.value, handler);
             
-            return capability;
+            const result = { status: "ERROR", error_code: "INVALID_ACTION" };
+            return makeStateBody(type, instance, { action_result: result });
         }));
 
         return response;
@@ -256,10 +237,29 @@ class Converter<Params, SetValue> {
     }
 
     getState(capabilities: any) {
-        return this.handleGet(capabilities);
+        const value = this.handleGet(capabilities);
+        return makeStateBody(this.type, this.instance, { value });
     }
 
-    setState(value: any) {
-        return this.handleSet(value);
+    async setState(value: any, handler: (capabilityId: string, value: any) => Promise<any>) {
+        const values = Object.entries(this.handleSet(value));
+        const actionResult = Promise
+            .all(values.map(async ([capabilityId, value]) => value !== null && handler(capabilityId, value)))
+            .then(() => ({ status: "DONE" }))
+            .catch((error: Error) => {
+                const errorMsg = error?.message || "";
+                const result = { status: "ERROR", error_code: "DEVICE_UNREACHABLE" };
+                console.log(errorMsg);
+
+                if (errorMsg.startsWith("Not Found: Device with ID"))
+                    result.error_code = "DEVICE_NOT_FOUND";
+
+                if (errorMsg.startsWith("Power on in progress..."))
+                    result.error_code = "DEVICE_BUSY";
+
+                return result;
+            });
+        
+        return makeStateBody(this.type, this.instance, { action_result: actionResult });
     }
 }

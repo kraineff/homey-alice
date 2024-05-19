@@ -1,6 +1,10 @@
 import { HomeyAPIV2 } from "homey-api";
 import { DeviceType } from "../typings";
 
+export function makeStateBody(type: string, instance: string, params: any) {
+    return { type, state: { instance, ...params } };
+}
+
 export function getDeviceType(device: HomeyAPIV2.ManagerDevices.Device) {
     const virtualClass = device.virtualClass;
     if (virtualClass) return getDeviceTypeByClass(virtualClass);
