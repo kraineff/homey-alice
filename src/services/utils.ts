@@ -1,5 +1,5 @@
 import { HomeyAPIV2 } from "homey-api";
-import Device from "../typings/device";
+import { DeviceType } from "../typings";
 
 export function getDeviceType(device: HomeyAPIV2.ManagerDevices.Device) {
     const virtualClass = device.virtualClass;
@@ -9,31 +9,31 @@ export function getDeviceType(device: HomeyAPIV2.ManagerDevices.Device) {
 
 function getDeviceTypeByClass(deviceClass: string) {
     switch (deviceClass) {
-        case "amplifier"      : return Device.Media;
-        case "blinds"         : return Device.Curtain;
-        case "button"         : return Device.SensorButton;
-        case "camera"         : return Device.Camera;
-        case "coffeemachine"  : return Device.CoffeeMachine;
-        case "curtain"        : return Device.Curtain;
-        case "doorbell"       : return Device.Other;
-        case "fan"            : return Device.Conditioner;
-        case "garagedoor"     : return Device.Openable;
-        case "heater"         : return Device.Thermostat;
-        case "homealarm"      : return Device.Other;
-        case "kettle"         : return Device.Kettle;
-        case "light"          : return Device.Light;
-        case "lock"           : return Device.Openable;
-        case "other"          : return Device.Other;
-        case "remote"         : return Device.Tv;
-        case "sensor"         : return Device.Sensor;
-        case "socket"         : return Device.Socket;
-        case "speaker"        : return Device.Media;
-        case "solarpanel"     : return Device.Other;
-        case "sunshade"       : return Device.Curtain;
-        case "thermostat"     : return Device.Thermostat;
-        case "tv"             : return Device.Tv;
-        case "vacuumcleaner"  : return Device.VacuumCleaner;
-        case "windowcoverings": return Device.Curtain
-        default               : return Device.Other;
+        case "amplifier"      : return DeviceType.Media;
+        case "blinds"         : return DeviceType.Curtain;
+        case "button"         : return DeviceType.SensorButton;
+        case "camera"         : return DeviceType.Camera;
+        case "coffeemachine"  : return DeviceType.CoffeeMachine;
+        case "curtain"        : return DeviceType.Curtain;
+        case "doorbell"       : return DeviceType.Other;
+        case "fan"            : return DeviceType.Conditioner;
+        case "garagedoor"     : return DeviceType.Openable;
+        case "heater"         : return DeviceType.Thermostat;
+        case "homealarm"      : return DeviceType.Other;
+        case "kettle"         : return DeviceType.Kettle;
+        case "light"          : return DeviceType.Light;
+        case "lock"           : return DeviceType.Openable;
+        case "other"          : return DeviceType.Other;
+        case "remote"         : return DeviceType.Tv;
+        case "sensor"         : return DeviceType.Sensor;
+        case "socket"         : return DeviceType.Socket;
+        case "speaker"        : return DeviceType.Media;
+        case "solarpanel"     : return DeviceType.Other;
+        case "sunshade"       : return DeviceType.Curtain;
+        case "thermostat"     : return DeviceType.Thermostat;
+        case "tv"             : return DeviceType.Tv;
+        case "vacuumcleaner"  : return DeviceType.VacuumCleaner;
+        case "windowcoverings": return DeviceType.Curtain
+        default               : return DeviceType.Other;
     }
 }

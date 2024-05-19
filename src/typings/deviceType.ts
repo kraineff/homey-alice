@@ -1,4 +1,4 @@
-enum Device {
+export enum DeviceType {
     Camera = "devices.types.camera",
     Cooking = "devices.types.cooking",
     CoffeeMachine = "devices.types.cooking.coffee_maker",
@@ -44,5 +44,3 @@ enum Device {
     VacuumCleaner = "devices.types.vacuum_cleaner",
     WashingMachine = "devices.types.washing_machine"
 }
-
-export default Device;

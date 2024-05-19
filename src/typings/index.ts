@@ -1,9 +1,6 @@
-export type ActionResult = {
-    status: "DONE" | "ERROR";
-    error_code?: string;
-    error_message?: string;
-};
-
-export * from "./capability";
-export * from "./provider";
-export * from "./device";
+export * from "./provider/actionResult";
+export * from "./provider/capability";
+export * from "./provider/device";
+export * from "./provider/routes";
+export * from "./callback";
+export * from "./deviceType";

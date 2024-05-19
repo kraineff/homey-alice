@@ -1,4 +1,4 @@
-import { CapabilityState, CapabilityStateAction } from "../typings";
+import { CapabilityAction, CapabilityState } from "../typings";
 
 type ConverterBuilder<Params, SetValue> =
     (run: Converter<Params, SetValue>) => typeof run;
@@ -98,43 +98,37 @@ export class HomeyConverter {
     }
 
     async setStates(capabilities: Array<CapabilityState>, handler: (capabilityId: string, value: any) => Promise<any>) {
-        const response: Record<"capabilities", Array<CapabilityStateAction>> = {
+        const response: Record<"capabilities", Array<CapabilityAction>> = {
             capabilities: []
         };
 
-        await Promise.all(
-            capabilities.map(async capability => {
-                const type = capability.type;
-                const instance = capability.state.instance;
-                const converter = this.converters[`${type},${instance}`];
-                if (!converter) return;
+        response.capabilities = await Promise.all(capabilities.map(async ({ type, state }) => {
+            const instance = state.instance;
+            const converter = this.converters[`${type},${instance}`];
+            const capability: CapabilityAction = { type, state: { instance, action_result: { status: "ERROR", error_code: "INVALID_ACTION" } } };
 
-                const values = converter.setState(capability.state.value);
-                const actionValues = Object.entries(values);
-                const actionResult: any = await Promise
-                    .all(actionValues.map(async ([capabilityId, value]) => value !== null && handler(capabilityId, value)))
+            if (converter) {
+                const values = converter.setState(state.value);
+                capability.state.action_result = await Promise
+                    .all(Object.entries(values).map(async ([capabilityId, value]) => value !== null && handler(capabilityId, value)))
                     .then(() => ({ status: "DONE" }))
                     .catch(error => {
-                        const result = {
-                            status: "ERROR",
-                            error_code: "DEVICE_UNREACHABLE"
-                        };
-                        
-                        const message = error?.message;
-                        if (message) {
-                            if (message.startsWith("Not Found: Device with ID"))
-                                result.error_code = "DEVICE_NOT_FOUND";
-                            if (message.startsWith("Power on in progress..."))
-                                result.error_code = "DEVICE_BUSY";
-                        }
-                        
+                        const errorMessage = error?.message;
+                        const actionResult = { status: "ERROR", error_code: "DEVICE_UNREACHABLE" };
                         console.log(error?.message);
-                        return result;
-                    });
+                        
+                        if (errorMessage?.startsWith("Not Found: Device with ID"))
+                            actionResult.error_code = "DEVICE_NOT_FOUND";
 
-                response.capabilities.push({ type, state: { instance, action_result: actionResult } });
-            })
-        );
+                        if (errorMessage?.startsWith("Power on in progress..."))
+                            actionResult.error_code = "DEVICE_BUSY";
+
+                        return actionResult;
+                    }) as any;
+            }
+            
+            return capability;
+        }));
 
         return response;
     }

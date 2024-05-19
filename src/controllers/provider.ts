@@ -1,8 +1,8 @@
 import { BunFile } from "bun";
 import { AthomCloudAPI, HomeyAPIV2 } from "homey-api";
-import { ActionDevice, ActionRequest, ActionResponse, DiscoveryDevice, DiscoveryResponse, QueryDevice, QueryRequest, QueryResponse } from "../typings/provider";
 import { HomeyConverters } from "../services/converters";
 import { getDeviceType } from "../services/utils";
+import { ActionDevice, ActionDevicesRequest, ActionDevicesResponse, DiscoveryDevice, DiscoveryDevicesResponse, QueryDevice, QueryDevicesRequest, QueryDevicesResponse } from "../typings";
 
 export class ProviderController {
     constructor(private clientId: string, private clientSecret: string, private storageFile: BunFile) {}
@@ -68,7 +68,7 @@ export class ProviderController {
         const homeyDevices: Record<string, HomeyAPIV2.ManagerDevices.Device> = await homeyApi.devices.getDevices();
         const homeyZones: Record<string, HomeyAPIV2.ManagerZones.Zone> = await homeyApi.zones.getZones();
         
-        const payload: DiscoveryResponse["payload"] = {
+        const payload: DiscoveryDevicesResponse["payload"] = {
             user_id: homeyApi.id,
             devices: []
         };
@@ -115,11 +115,11 @@ export class ProviderController {
         return payload;
     }
 
-    async queryDevices(token: string, body: QueryRequest) {
+    async queryDevices(token: string, body: QueryDevicesRequest) {
         const homeyApi = await this.getHomeyAPI(token);
         const homeyDevices: Record<string, HomeyAPIV2.ManagerDevices.Device> = await homeyApi.devices.getDevices();
         
-        const payload: QueryResponse["payload"] = {
+        const payload: QueryDevicesResponse["payload"] = {
             devices: []
         };
 
@@ -155,10 +155,10 @@ export class ProviderController {
         return payload;
     }
 
-    async actionDevices(token: string, body: ActionRequest) {
+    async actionDevices(token: string, body: ActionDevicesRequest) {
         const homeyApi = await this.getHomeyAPI(token);
 
-        const payload: ActionResponse["payload"] = {
+        const payload: ActionDevicesResponse["payload"] = {
             devices: []
         };
 
