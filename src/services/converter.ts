@@ -131,7 +131,7 @@ export class HomeyConverter {
 
         converters.map(converter => {
             const capability = converter.convertGet(capabilities);
-            capability !== null && response[converter.category].push(capability);
+            capability !== undefined && response[converter.category].push(capability);
         });
 
         return response;
@@ -192,22 +192,22 @@ class Converter<Params extends Record<string, any>, SetValue extends any> {
         return this;
     }
 
-    getHomey(capabilityId: string, handler?: (capability: HomeyCapability) => SetValue | null) {
+    getHomey<ValueType = any>(capabilityId: string, handler?: (value: ValueType) => SetValue | undefined | "@break") {
         const prevHandler = this.handleGet;
-        handler = handler ?? (capability => capability.value);
+        handler = handler ?? (value => value as unknown as SetValue);
 
         this.handleGet = function (capabilities) {
             const capability = capabilities[capabilityId];
 
-            let capabilityValue = capability?.value ?? null;
+            let capabilityValue = capability?.value ?? undefined;
             if (capability?.getable === false && capability?.type === "boolean")
                 capabilityValue = false;
 
             const prevValue = prevHandler(capabilities);
-            const value = capabilityValue !== null ? handler(capability) : null;
+            const value = capabilityValue !== undefined ? handler(capabilityValue) : undefined;
 
-            if (value === "@break") return null;
-            if (value === null) return prevValue;
+            if (value === "@break") return undefined;
+            if (value === undefined) return prevValue;
             if (typeof value === "number") return Math.abs(value);
             if (typeof value === "object" && typeof prevValue === "object") return { ...prevValue, ...value };
             return value;
@@ -216,15 +216,15 @@ class Converter<Params extends Record<string, any>, SetValue extends any> {
         return this;
     }
 
-    setHomey(capabilityId: string, handler?: (value: Required<SetValue>) => any | null) {
+    setHomey<ValueType = any>(capabilityId: string, handler?: (value: SetValue) => ValueType | undefined) {
         const prevHandler = this.handleSet;
-        handler = handler ?? (value => value);
+        handler = handler ?? (value => value as unknown as ValueType);
 
         this.handleSet = function (capabilityValue) {
-            capabilityValue = capabilityValue ?? null;
+            capabilityValue = capabilityValue ?? undefined;
             const prevValue = prevHandler(capabilityValue);
             const value = handler(capabilityValue);
-            prevValue[capabilityId] = value;
+            prevValue[capabilityId] = value ?? undefined;
             return prevValue;
         }
         
@@ -286,13 +286,13 @@ class Converter<Params extends Record<string, any>, SetValue extends any> {
 
     convertGet(capabilities: HomeyCapabilities) {
         const value = this.handleGet(capabilities);
-        return value !== null ? makeStateBody(this.type, this.instance, { value }) : null;
+        return value !== undefined ? makeStateBody(this.type, this.instance, { value }) : undefined;
     }
 
     async convertSet(value: any, handler: (capabilityId: string, value: any) => Promise<any>) {
         const values = Object.entries(this.handleSet(value));
         const actionResult = await Promise
-            .all(values.map(async ([capabilityId, value]) => value !== null && handler(capabilityId, value)))
+            .all(values.map(async ([capabilityId, value]) => value !== undefined && handler(capabilityId, value)))
             .then(() => ({ status: "DONE" }))
             .catch((error: Error) => {
                 const errorMsg = error?.message || "";
