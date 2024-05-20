@@ -1,11 +1,14 @@
-import { CapabilityAction, CapabilityState } from "../typings";
+import { HomeyAPIV2 } from "homey-api";
+import { CapabilityAction, CapabilityParams, CapabilityState } from "../typings";
 import { makeStateBody } from "./utils";
 
+type HomeyCapability = HomeyAPIV2.ManagerDevices.Capability & { value: any };
+type HomeyCapabilities = Record<string, HomeyCapability>;
 type ConverterBuilder<Params, SetValue> =
-    (run: Converter<Params, SetValue>) => typeof run;
+    (converter: Converter<Params & { retrievable?: boolean }, SetValue>) => typeof converter;
 
 export class HomeyConverter {
-    private converters: Record<string, any> = {};
+    private converters: Record<string, Converter<any, any>> = {};
 
     use(converter: HomeyConverter) {
         this.converters = { ...this.converters, ...converter.converters };
@@ -15,6 +18,7 @@ export class HomeyConverter {
     createState(run: ConverterBuilder<{ split?: boolean }, boolean>) {
         const type = "devices.capabilities.on_off";
         const instance = "on";
+        // @ts-ignore
         this.converters[`${type},${instance}`] = run(new Converter(type, instance));
         return this;
     }
@@ -35,6 +39,7 @@ export class HomeyConverter {
 
     createMode(instance: string, run: ConverterBuilder<{ modes: string[] }, string>) {
         const type = "devices.capabilities.mode";
+        // @ts-ignore
         this.converters[`${type},${instance}`] = run(new Converter(type, instance));
         return this;
     }
@@ -42,32 +47,40 @@ export class HomeyConverter {
     createRange(instance: string, run: ConverterBuilder<{
         unit?: string;
         random_access?: boolean;
-        range?: [number, number, number];
+        range?: {
+            min: number;
+            max: number;
+            precision: number;
+        };
     }, number>) {
         const type = "devices.capabilities.range";
+        // @ts-ignore
         this.converters[`${type},${instance}`] = run(new Converter(type, instance));
         return this;
     }
 
     createToggle(instance: string, run: ConverterBuilder<{}, boolean>) {
         const type = "devices.capabilities.toggle";
+        // @ts-ignore
         this.converters[`${type},${instance}`] = run(new Converter(type, instance));
         return this;
     }
 
     createFloat(instance: string, run: ConverterBuilder<{ unit?: string }, number>) {
         const type = "devices.properties.float";
+        // @ts-ignore
         this.converters[`${type},${instance}`] = run(new Converter(type, instance));
         return this;
     }
 
     createEvent(instance: string, run: ConverterBuilder<{ events: string[] }, string>) {
         const type = "devices.properties.event";
+        // @ts-ignore
         this.converters[`${type},${instance}`] = run(new Converter(type, instance));
         return this;
     }
 
-    getParameters(capabilities: any) {
+    getParams(capabilities: HomeyCapabilities) {
         const converters = Object.values(this.converters);
         const response: Record<"capabilities" | "properties", Array<any>> = {
             capabilities: [],
@@ -75,14 +88,14 @@ export class HomeyConverter {
         };
 
         converters.map(converter => {
-            const capability = converter.getParams(capabilities);
-            response[converter.category as keyof typeof response].push(capability);
+            const capability = converter.convertParams(capabilities);
+            response[converter.category].push(capability);
         });
 
         return response;
     }
 
-    getStates(capabilities: any) {
+    getStates(capabilities: HomeyCapabilities) {
         const converters = Object.values(this.converters);
         const response: Record<"capabilities" | "properties", Array<CapabilityState>> = {
             capabilities: [],
@@ -90,8 +103,8 @@ export class HomeyConverter {
         };
 
         converters.map(converter => {
-            const capability = converter.getState(capabilities);
-            response[converter.category as keyof typeof response].push(capability);
+            const capability = converter.convertGet(capabilities);
+            capability !== null && response[converter.category].push(capability);
         });
 
         return response;
@@ -105,7 +118,7 @@ export class HomeyConverter {
         response.capabilities = await Promise.all(capabilities.map(async ({ type, state }) => {
             const instance = state.instance;
             const converter = this.converters[`${type},${instance}`];
-            if (converter) return converter.setState(state.value, handler);
+            if (converter) return converter.convertSet(state.value, handler);
             
             const result = { status: "ERROR", error_code: "INVALID_ACTION" };
             return makeStateBody(type, instance, { action_result: result });
@@ -115,34 +128,34 @@ export class HomeyConverter {
     }
 }
 
-type ParamsHandler<Params> = (capabilities: Record<string, any>) => Partial<Params>;
+type ParamsHandler<Params> = (capabilities: HomeyCapabilities) => Partial<Params>;
 
-class Converter<Params, SetValue> {
-    readonly category: string;
-    private parameters: any;
-    private parametersRaw: any;
+class Converter<Params extends Record<string, any>, SetValue extends any> {
+    readonly category: "capabilities" | "properties";
+    private parameters: CapabilityParams;
+    private parametersRaw: Params;
     private handleParams: ParamsHandler<Params>;
-    private handleGet: (capabilities: Record<string, any>) => any;
+    private handleGet: (capabilities: HomeyCapabilities) => any;
     private handleSet: (value: any) => Record<string, any>;
 
     constructor(readonly type: string, readonly instance: string) {
-        this.category = type.split(".")[1];
+        this.category = type.split(".")[1] as any;
         this.parameters = {
             type,
             retrievable: true, reportable: false,
             parameters: {}
         };
-        this.parametersRaw = {};
+        this.parametersRaw = {} as Params;
         this.handleParams = () => ({});
         this.handleGet = () => null;
         this.handleSet = () => ({});
     }
 
-    setParams(params: Params & { parse?: ParamsHandler<Params> }) {
+    setParams(params: Params & { parse?: ParamsHandler<Params>; }) {
         const { parse, ...parameters } = params;
         const prevHandler = this.handleParams;
         
-        this.parametersRaw = parameters;
+        this.parametersRaw = parameters as Params;
         parse && (this.handleParams = function (capabilities) {
             const prevValue = prevHandler(capabilities);
             const value = parse(capabilities);
@@ -152,7 +165,7 @@ class Converter<Params, SetValue> {
         return this;
     }
 
-    getHomey(capabilityId: string, handler?: (capability: any) => SetValue | null) {
+    getHomey(capabilityId: string, handler?: (capability: HomeyCapability) => SetValue | null) {
         const prevHandler = this.handleGet;
         handler = handler ?? (capability => capability.value);
 
@@ -190,13 +203,16 @@ class Converter<Params, SetValue> {
         return this;
     }
 
-    getParams(capabilities: any) {
+    convertParams(capabilities: HomeyCapabilities) {
         const parametersRaw: Record<string, any> = {
             ...this.parametersRaw,
             ...this.handleParams(capabilities)
         };
         
         const parameters = this.parameters;
+        if (parametersRaw.retrievable !== undefined)
+            parameters.retrievable = parametersRaw.retrievable;
+
         parameters.parameters = {
             ...parameters.parameters,
             ...(["devices.capabilities.mode",
@@ -225,25 +241,21 @@ class Converter<Params, SetValue> {
                 events: parametersRaw.events.map((value: string) => ({ value }))
             }),
             ...((parametersRaw.range ?? undefined) && {
-                range: {
-                    min: parametersRaw.range[0],
-                    max: parametersRaw.range[1],
-                    precision: parametersRaw.range[2],
-                }
+                range: parametersRaw.range
             })
         };
 
         return parameters;
     }
 
-    getState(capabilities: any) {
+    convertGet(capabilities: HomeyCapabilities) {
         const value = this.handleGet(capabilities);
-        return makeStateBody(this.type, this.instance, { value });
+        return value !== null ? makeStateBody(this.type, this.instance, { value }) : null;
     }
 
-    async setState(value: any, handler: (capabilityId: string, value: any) => Promise<any>) {
+    async convertSet(value: any, handler: (capabilityId: string, value: any) => Promise<any>) {
         const values = Object.entries(this.handleSet(value));
-        const actionResult = Promise
+        const actionResult = await Promise
             .all(values.map(async ([capabilityId, value]) => value !== null && handler(capabilityId, value)))
             .then(() => ({ status: "DONE" }))
             .catch((error: Error) => {

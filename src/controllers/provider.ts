@@ -97,12 +97,12 @@ export class ProviderController {
             }
 
             // Конвертация
-            const homeyCapabilities = homeyDevice.capabilitiesObj;
+            const homeyCapabilities: any = homeyDevice.capabilitiesObj;
             const capabilities: Array<any> = driverConverter ? [{ id: driverId }] : Object.values(homeyCapabilities);
             capabilities.map(capability => {
                 const converter = HomeyConverters[capability.id];
                 if (converter) {
-                    const result = converter.getParameters(homeyCapabilities);
+                    const result = converter.getParams(homeyCapabilities);
                     device.custom_data.push(capability.id);
                     device.capabilities = [...device.capabilities, ...result.capabilities];
                     device.properties = [...device.properties, ...result.properties];
@@ -142,7 +142,7 @@ export class ProviderController {
                 converterIds.map(converterId => {
                     const converter = HomeyConverters[converterId];
                     if (converter) {
-                        const result = converter.getStates(homeyDevice.capabilitiesObj);
+                        const result = converter.getStates(<any>homeyDevice.capabilitiesObj);
                         device.capabilities = [...device.capabilities!, ...result.capabilities];
                         device.properties = [...device.properties!, ...result.properties];
                     }

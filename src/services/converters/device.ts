@@ -38,7 +38,7 @@ export const DeviceConverters = {
         .createRange("open", run => run
             .setParams({
                 unit: "percent",
-                range: [0, 100, 1]
+                range: { min: 0, max: 100, precision: 1 }
             })
             .getHomey("windowcoverings_set", state => state.value * 100)
             .setHomey("windowcoverings_set", value => value / 100)
@@ -51,22 +51,10 @@ export const DeviceConverters = {
         .use(CapabilityConverters.target_temperature)
         .createMode("fan_speed", run => run
             .setParams({ modes: ["auto", "low", "medium", "high"] })
-            .getHomey("fan_speed", state => {
-                const values: any = { Auto: "auto", Low: "low", Mid: "medium", High: "high" };
-                return values[state.value];
-            })
-            .setHomey("fan_speed", value => {
-                const values: any = { auto: "Auto", low: "Low", medium: "Mid", high: "High" };
-                return values[value];
-            }))
+            .getHomey("fan_speed", state => (({ Auto: "auto", Low: "low", Mid: "medium", High: "high" } as any)[state.value]))
+            .setHomey("fan_speed", value => ({ auto: "Auto", low: "Low", medium: "Mid", high: "High" }[value])))
         .createMode("program", run => run
             .setParams({ modes: ["auto", "dry", "cool", "heat", "fan_only"] })
-            .getHomey("operation_mode", state => {
-                const values: any = { Auto: "auto", Dry: "dry", Cool: "cool", Heat: "heat", Fan: "fan_only" };
-                return values[state.value];
-            })
-            .setHomey("operation_mode", value => {
-                const values: any = { auto: "Auto", dry: "Dry", cool: "Cool", heat: "Heat", fan_only: "Fan" };
-                return values[value];
-            }))
+            .getHomey("operation_mode", state => (({ Auto: "auto", Dry: "dry", Cool: "cool", Heat: "heat", Fan: "fan_only" } as any)[state.value]))
+            .setHomey("operation_mode", value => ({ auto: "Auto", dry: "Dry", cool: "Cool", heat: "Heat", fan_only: "Fan" }[value])))
 };

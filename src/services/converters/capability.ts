@@ -10,16 +10,16 @@ export const CapabilityConverters = {
         .createRange("brightness", run => run
             .setParams({
                 unit: "percent",
-                range: [0, 100, 1],
+                range: { min: 0, max: 100, precision: 1 },
             })
-            .getHomey("dim", capability => capability.value * 100)
+            .getHomey("dim", state => state.value * 100)
             .setHomey("dim", value => value / 100)),
     
     light_hue: new HomeyConverter()
         .createColor(run => run
             .getHomey("light_hue", state => ({ h: Math.round(state.value * 360), s: 100, v: 100 }))
-            .getHomey("light_saturation", state => ({ s: Math.round(state.value * 100), v: 100 }))
             .setHomey("light_hue", value => value.h / 360)
+            .getHomey("light_saturation", state => ({ s: Math.round(state.value * 100), v: 100 }))
             .setHomey("light_saturation", value => value.s / 100)),
     
     thermostat_mode: new HomeyConverter()
@@ -36,11 +36,11 @@ export const CapabilityConverters = {
             .setParams({
                 unit: "temperature.celsius",
                 parse: ({ target_temperature }) => ({
-                    range: [
-                        target_temperature.min ?? 4,
-                        target_temperature.max ?? 35,
-                        target_temperature.step ?? 0.5
-                    ]
+                    range: {
+                        min: target_temperature.min ?? 4,
+                        max: target_temperature.max ?? 35,
+                        precision: target_temperature.step ?? 0.5
+                    }
                 }),
             })
             .getHomey("target_temperature")
@@ -74,7 +74,7 @@ export const CapabilityConverters = {
     measure_pressure: new HomeyConverter()
         .createFloat("pressure", run => run
             .setParams({ unit: "pressure.bar" })
-            .getHomey("measure_pressure", state => state.value * 0.001)),
+            .getHomey("measure_pressure", state => state.value / 1000)),
 
     measure_battery: new HomeyConverter()
         .createFloat("battery_level", run => run
@@ -160,9 +160,9 @@ export const CapabilityConverters = {
         .createRange("volume", run => run
             .setParams({
                 unit: "percent",
-                range: [0, 100, 1]
+                range: { min: 0, max: 100, precision: 1 }
             })
-            .getHomey("volume_set", capability => capability.value * 100)
+            .getHomey("volume_set", state => state.value * 100)
             .setHomey("volume_set", value => value / 100)),
     
     volume_mute: new HomeyConverter()
@@ -177,25 +177,26 @@ export const CapabilityConverters = {
 
     garagedoor_closed: new HomeyConverter()
         .createState(run => run
-            .getHomey("garagedoor_closed")
-            .setHomey("garagedoor_closed")),
+            .getHomey("garagedoor_closed", state => !state.value)
+            .setHomey("garagedoor_closed", value => !value)),
 
     windowcoverings_closed: new HomeyConverter()
         .createState(run => run
-            .getHomey("windowcoverings_closed")
-            .setHomey("windowcoverings_closed")),
+            .getHomey("windowcoverings_closed", state => !state.value)
+            .setHomey("windowcoverings_closed", value => !value)),
     
     windowcoverings_set: new HomeyConverter()
         .createRange("open", run => run
             .setParams({
                 unit: "percent",
-                range: [0, 100, 1]
+                range: { min: 0, max: 100, precision: 1 }
             })
-            .getHomey("windowcoverings_set", capability => capability.value * 100)
+            .getHomey("windowcoverings_set", state => state.value * 100)
             .setHomey("windowcoverings_set", value => value / 100)),
 
     button: new HomeyConverter()
         .createState(run => run
+            .setParams({ split: true, retrievable: false })
             .getHomey("button", () => false)
             .setHomey("button", value => value && value || null)),
 
