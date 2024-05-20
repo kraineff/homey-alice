@@ -1,24 +1,24 @@
 import { HomeyConverter } from "../converter";
-import { CapabilityConverters } from "./capability";
 
 export const DeviceConverters = {
-    "com.irobot:roomba_vacuum": new HomeyConverter()
-        .use(CapabilityConverters.measure_battery)
+    "com.irobot:roomba_vacuum": HomeyConverter
+        .create("com.irobot:roomba_vacuum")
         .createState(run => run
             .getHomey("vacuum_state", state => ["clean", "quick", "spot", "train", "manual", "paused", "stopped"].includes(state.value))
-            .setHomey("command_dock", value => !value && true || null)
-            .setHomey("command_start_clean", value => value && true || null))
+            .setHomey("command_start_clean", value => value === true && true || null)
+            .setHomey("command_dock", value => value === false && true || null))
         .createToggle("pause", run => run
             .getHomey("vacuum_state", state => ["paused", "stopped"].includes(state.value))
-            .setHomey("command_resume", value => !value && true || null)
-            .setHomey("command_pause", value => value && true || null))
+            .setHomey("command_pause", value => value === true && true || null)
+            .setHomey("command_resume", value => value === false && true || null))
         .createFloat("meter", run => run
             .getHomey("measure_mission_minutes"))
         .createEvent("open", run => run
             .setParams({ events: ["opened", "closed"] })
             .getHomey("alarm_bin_removed", state => ["closed", "opened"][Number(state.value)])),
     
-    "com.nokia.health:user": new HomeyConverter()
+    "com.nokia.health:user": HomeyConverter
+        .create("com.nokia.health:user")
         .createFloat("temperature", run => run
             .setParams({ unit: "temperature.celsius" })
             .getHomey("nh_measure_body_temperature"))
@@ -32,9 +32,8 @@ export const DeviceConverters = {
             .getHomey("nh_measure_weight")),
 
     // иногда dim иногда windowcoverings_set
-    "com.fibaro:FGR-223": new HomeyConverter()
-        .use(CapabilityConverters.meter_power)
-        .use(CapabilityConverters.measure_power)
+    "com.fibaro:FGR-223": HomeyConverter
+        .create("com.fibaro:FGR-223")
         .createRange("open", run => run
             .setParams({
                 unit: "percent",
@@ -45,10 +44,8 @@ export const DeviceConverters = {
             .getHomey("dim", state => state.value * 100)
             .setHomey("dim", value => value / 100)),
 
-    "net.schmidt-cisternas.pcc-alt:aircon": new HomeyConverter()
-        .use(CapabilityConverters.onoff)
-        .use(CapabilityConverters.measure_temperature)
-        .use(CapabilityConverters.target_temperature)
+    "net.schmidt-cisternas.pcc-alt:aircon": HomeyConverter
+        .create("net.schmidt-cisternas.pcc-alt:aircon")
         .createMode("fan_speed", run => run
             .setParams({ modes: ["auto", "low", "medium", "high"] })
             .getHomey("fan_speed", state => (({ Auto: "auto", Low: "low", Mid: "medium", High: "high" } as any)[state.value]))

@@ -10,6 +10,12 @@ type ConverterBuilder<Params, SetValue> =
 export class HomeyConverter {
     private converters: Record<string, Converter<any, any>> = {};
 
+    constructor(private name: string) {}
+
+    static create(name: string) {
+        return new HomeyConverter(name);
+    }
+
     use(converter: HomeyConverter) {
         this.converters = { ...this.converters, ...converter.converters };
         return this;
@@ -19,28 +25,34 @@ export class HomeyConverter {
         const type = "devices.capabilities.on_off";
         const instance = "on";
         // @ts-ignore
-        this.converters[`${type},${instance}`] = run(new Converter(type, instance));
+        this.converters[`${type},${instance}`] = run(new Converter(this.name, type, instance));
         return this;
     }
 
-    createColor(run: ConverterBuilder<{}, Partial<{ h: number, s: number, v: number }>>) {
+    createColor(instance: string, run: ConverterBuilder<{
+        temperature_k?: {
+            min: number;
+            max: number;
+        };
+        scenes?: string[];
+    }, any>) {
         const type = "devices.capabilities.color_setting";
-        const instance = "hsv";
-        this.converters[`${type},${instance}`] = run(new Converter(type, instance));
+        // @ts-ignore
+        this.converters[`${type},${instance}`] = run(new Converter(this.name, type, instance));
         return this;
     }
 
     createVideo(run: ConverterBuilder<{ protocols: string[] }, { protocols: string[] }>) {
         const type = "devices.capabilities.video_stream";
         const instance = "get_stream";
-        this.converters[`${type},${instance}`] = run(new Converter(type, instance));
+        this.converters[`${type},${instance}`] = run(new Converter(this.name, type, instance));
         return this;
     }
 
     createMode(instance: string, run: ConverterBuilder<{ modes: string[] }, string>) {
         const type = "devices.capabilities.mode";
         // @ts-ignore
-        this.converters[`${type},${instance}`] = run(new Converter(type, instance));
+        this.converters[`${type},${instance}`] = run(new Converter(this.name, type, instance));
         return this;
     }
 
@@ -55,43 +67,58 @@ export class HomeyConverter {
     }, number>) {
         const type = "devices.capabilities.range";
         // @ts-ignore
-        this.converters[`${type},${instance}`] = run(new Converter(type, instance));
+        this.converters[`${type},${instance}`] = run(new Converter(this.name, type, instance));
         return this;
     }
 
     createToggle(instance: string, run: ConverterBuilder<{}, boolean>) {
         const type = "devices.capabilities.toggle";
         // @ts-ignore
-        this.converters[`${type},${instance}`] = run(new Converter(type, instance));
+        this.converters[`${type},${instance}`] = run(new Converter(this.name, type, instance));
         return this;
     }
 
     createFloat(instance: string, run: ConverterBuilder<{ unit?: string }, number>) {
         const type = "devices.properties.float";
         // @ts-ignore
-        this.converters[`${type},${instance}`] = run(new Converter(type, instance));
+        this.converters[`${type},${instance}`] = run(new Converter(this.name, type, instance));
         return this;
     }
 
     createEvent(instance: string, run: ConverterBuilder<{ events: string[] }, string>) {
         const type = "devices.properties.event";
         // @ts-ignore
-        this.converters[`${type},${instance}`] = run(new Converter(type, instance));
+        this.converters[`${type},${instance}`] = run(new Converter(this.name, type, instance));
         return this;
     }
 
     getParams(capabilities: HomeyCapabilities) {
         const converters = Object.values(this.converters);
-        const response: Record<"capabilities" | "properties", Array<any>> = {
+        const response: Record<"capabilities" | "properties" | "custom_data", Array<any>> = {
             capabilities: [],
             properties: [],
+            custom_data: []
         };
 
+        let colorCapability: any = {};
+        const converterIds = new Set();
         converters.map(converter => {
             const capability = converter.convertParams(capabilities);
+            converterIds.add(converter.name);
+
+            if (capability.type === "devices.capabilities.color_setting")
+                return colorCapability = {
+                    type: "devices.capabilities.color_setting",
+                    retrievable: colorCapability.retrievable ?? capability.retrievable,
+                    reportable: colorCapability.reportable ?? capability.reportable,
+                    parameters: { ...(colorCapability.parameters || {}), ...capability.parameters }
+                };
+
             response[converter.category].push(capability);
         });
 
+        Object.keys(colorCapability).length && response.capabilities.push(colorCapability);
+        response.custom_data = [...converterIds];
         return response;
     }
 
@@ -138,7 +165,7 @@ class Converter<Params extends Record<string, any>, SetValue extends any> {
     private handleGet: (capabilities: HomeyCapabilities) => any;
     private handleSet: (value: any) => Record<string, any>;
 
-    constructor(readonly type: string, readonly instance: string) {
+    constructor(readonly name: string, readonly type: string, readonly instance: string) {
         this.category = type.split(".")[1] as any;
         this.parameters = {
             type,
@@ -179,6 +206,7 @@ class Converter<Params extends Record<string, any>, SetValue extends any> {
             const prevValue = prevHandler(capabilities);
             const value = capabilityValue !== null ? handler(capability) : null;
 
+            if (value === "@break") return null;
             if (value === null) return prevValue;
             if (typeof value === "number") return Math.abs(value);
             if (typeof value === "object" && typeof prevValue === "object") return { ...prevValue, ...value };
@@ -222,8 +250,16 @@ class Converter<Params extends Record<string, any>, SetValue extends any> {
                  "devices.properties.event"].includes(this.type) && {
                 instance: this.instance
             }),
-            ...(("devices.capabilities.color_setting" === this.type) && {
+            ...((["hsv", "rgb"].includes(this.instance)) && {
                 color_model: this.instance
+            }),
+            ...(("temperature_k" === this.instance && parametersRaw.temperature_k) && {
+                temperature_k: parametersRaw.temperature_k
+            }),
+            ...(("scene" === this.instance && parametersRaw.scenes) && {
+                color_scene: {
+                    scenes: parametersRaw.scenes.map((id: string) => ({ id }))
+                }
             }),
             ...((parametersRaw.split ?? undefined) && {
                 split: parametersRaw.split
@@ -262,6 +298,9 @@ class Converter<Params extends Record<string, any>, SetValue extends any> {
                 const errorMsg = error?.message || "";
                 const result = { status: "ERROR", error_code: "DEVICE_UNREACHABLE" };
                 console.log(errorMsg);
+
+                if (errorMsg.startsWith("Invalid Capability:"))
+                    return ({ status: "DONE" });
 
                 if (errorMsg.startsWith("Not Found: Device with ID"))
                     result.error_code = "DEVICE_NOT_FOUND";
