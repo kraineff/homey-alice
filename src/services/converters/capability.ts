@@ -204,11 +204,25 @@ export const CapabilityConverters = {
             .getHomey<number>("volume_set", value => value * 100)
             .setHomey<number>("volume_set", value => value / 100)),
     
+    volume_up: HomeyConverter
+        .create("volume_up")
+        .createRange("volume", run => run
+            .setParams({ retrievable: false, random_access: false, range: { min: 0, max: 1, precision: 1 } })
+            .setHomey<boolean>("volume_up", value => value === 1 && true || undefined)
+            .setHomey<boolean>("volume_down", value => value === 0 && true || undefined)),
+
     volume_mute: HomeyConverter
         .create("volume_mute")
         .createToggle("mute", run => run
             .getHomey<boolean>("volume_mute")
             .setHomey<boolean>("volume_mute")),
+
+    channel_up: HomeyConverter
+        .create("channel_up")
+        .createRange("channel", run => run
+            .setParams({ retrievable: false, random_access: false, range: { min: 0, max: 1, precision: 1 } })
+            .setHomey<boolean>("channel_up", value => value === 1 && true || undefined)
+            .setHomey<boolean>("channel_down", value => value === 0 && true || undefined)),
 
     locked: HomeyConverter
         .create("locked")
