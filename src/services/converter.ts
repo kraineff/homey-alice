@@ -17,7 +17,26 @@ export class HomeyConverter {
     }
 
     use(converter: HomeyConverter) {
-        this.converters = { ...this.converters, ...converter.converters };
+        const converters = { ...this.converters };
+        const newConverters = Object.values({ ...converter.converters });
+
+        newConverters.map(newConverter => {
+            const newConverterKey = `${newConverter.type},${newConverter.instance}`;
+            const currentConverter = converters[newConverterKey];
+
+            if (currentConverter !== undefined) {
+                const currentConverterName = currentConverter.name;
+                
+                Object.values(converters).map(converter => {
+                    if (converter.name !== currentConverterName) return;
+                    delete converters[`${converter.type},${converter.instance}`];
+                });
+            }
+
+            converters[newConverterKey] = newConverter;
+        });
+
+        this.converters = converters;
         return this;
     }
 
@@ -237,7 +256,7 @@ class Converter<Params extends Record<string, any>, SetValue extends any> {
             ...this.handleParams(capabilities)
         };
         
-        const parameters = this.parameters;
+        const parameters = { ...this.parameters };
         if (parametersRaw.retrievable !== undefined)
             parameters.retrievable = parametersRaw.retrievable;
 

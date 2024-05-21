@@ -14,15 +14,14 @@ export class ProviderController {
         storageAdapter.get = async () => {
             const storageItems: any[] = await this.storageFile.json();
             const storageItem = storageItems.find(item => item.token === token);
-            storageItem && console.log(`[Хранилище: ${storageItem.storage?.user?.firstname} ${storageItem.storage?.user?.lastname}] -> Получение`);
             return storageItem && storageItem.storage || {};
         };
 
         storageAdapter.set = async (storage: any) => {
+            !storage.user && console.log(JSON.stringify(storage));
             const homeyId = storage.user.homeys[0].id;
             const storageItems: any[] = await this.storageFile.json();
             const storageItem = storageItems.find(item => item.homeyId === homeyId);
-            console.log(`[Хранилище: ${storage.user?.firstname} ${storage.user?.lastname}] -> Установка`);
 
             storageItem
                 ? (storageItem.token = token, storageItem.storage = { ...storageItem.storage, ...storage })
