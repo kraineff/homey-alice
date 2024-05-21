@@ -1,6 +1,30 @@
 import { HomeyConverter } from "../converter";
 
 export const DeviceConverters = {
+    "codes.lucasvdh.android-tv:remote": HomeyConverter
+        .create("codes.lucasvdh.android-tv:remote")
+        .createRange("channel", run => run
+            .setParams({ retrievable: false, random_access: false, range: { min: 0, max: 1, precision: 1 } })
+            .setHomey<boolean>("key_channel_up", value => value === 1 && true || undefined)
+            .setHomey<boolean>("key_channel_down", value => value === 0 && true || undefined))
+        .createToggle("pause", run => run
+            .setParams({ retrievable: false })
+            .setHomey<boolean>("key_pause", value => value === true && true || undefined)
+            .setHomey<boolean>("key_play", value => value === false && true || undefined)),
+    
+    // иногда dim иногда windowcoverings_set
+    "com.fibaro:FGR-223": HomeyConverter
+        .create("com.fibaro:FGR-223")
+        .createRange("open", run => run
+            .setParams({
+                unit: "percent",
+                range: { min: 0, max: 100, precision: 1 }
+            })
+            .getHomey<number>("windowcoverings_set", value => value * 100)
+            .setHomey<number>("windowcoverings_set", value => value / 100)
+            .getHomey<number>("dim", value => value * 100)
+            .setHomey<number>("dim", value => value / 100)),
+    
     "com.irobot:roomba_vacuum": HomeyConverter
         .create("com.irobot:roomba_vacuum")
         .createState(run => run
@@ -30,20 +54,21 @@ export const DeviceConverters = {
             .getHomey<number>("nh_measure_fat_ratio"))
         .createFloat("meter", run => run
             .getHomey<number>("nh_measure_weight")),
-
-    // иногда dim иногда windowcoverings_set
-    "com.fibaro:FGR-223": HomeyConverter
-        .create("com.fibaro:FGR-223")
-        .createRange("open", run => run
-            .setParams({
-                unit: "percent",
-                range: { min: 0, max: 100, precision: 1 }
-            })
-            .getHomey<number>("windowcoverings_set", value => value * 100)
-            .setHomey<number>("windowcoverings_set", value => value / 100)
-            .getHomey<number>("dim", value => value * 100)
-            .setHomey<number>("dim", value => value / 100)),
-
+    
+    "com.sensibo:Sensibo": HomeyConverter
+        .create("com.sensibo:Sensibo")
+        .createState(run => run
+            .getHomey<boolean>("se_onoff")
+            .setHomey<boolean>("se_onoff"))
+        .createMode("thermostat", run => run
+            .setParams({ modes: ["auto", "heat", "cool"] })
+            .getHomey<string>("thermostat_mode", value => ["auto", "heat", "cool"].includes(value) && value || undefined)
+            .setHomey<string>("thermostat_mode"))
+        .createMode("fan_speed", run => run
+            .setParams({ modes: ["quiet", "auto", "low", "medium", "high"] })
+            .getHomey<string>("se_fanlevel", value => ["quiet", "auto", "low", "medium", "high"].includes(value) && value || undefined)
+            .setHomey<string>("se_fanlevel")),
+    
     "net.schmidt-cisternas.pcc-alt:aircon": HomeyConverter
         .create("net.schmidt-cisternas.pcc-alt:aircon")
         .createMode("fan_speed", run => run
