@@ -18,7 +18,7 @@ export class ProviderController {
         };
 
         storageAdapter.set = async (storage: any) => {
-            !storage.user && console.log(JSON.stringify(storage));
+            if (!storage.user) return;
             const homeyId = storage.user.homeys[0].id;
             const storageItems: any[] = await this.storageFile.json();
             const storageItem = storageItems.find(item => item.homeyId === homeyId);

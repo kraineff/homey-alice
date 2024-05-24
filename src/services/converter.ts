@@ -193,7 +193,7 @@ class Converter<Params extends Record<string, any>, SetValue extends any> {
         };
         this.parametersRaw = {} as Params;
         this.handleParams = () => ({});
-        this.handleGet = () => null;
+        this.handleGet = () => undefined;
         this.handleSet = () => ({});
     }
 
