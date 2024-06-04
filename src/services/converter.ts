@@ -2,8 +2,8 @@ import { HomeyAPIV2 } from "homey-api";
 import { CapabilityAction, CapabilityParams, CapabilityState } from "../typings";
 import { makeStateBody } from "./utils";
 
-type HomeyCapability = HomeyAPIV2.ManagerDevices.Capability & { value: any };
-type HomeyCapabilities = Record<string, HomeyCapability>;
+export type HomeyCapability = HomeyAPIV2.ManagerDevices.Capability & { value: any };
+export type HomeyCapabilities = Record<string, HomeyCapability>;
 type ConverterBuilder<Params, SetValue> =
     (converter: Converter<Params & { retrievable?: boolean }, SetValue>) => typeof converter;
 
@@ -114,9 +114,7 @@ export class HomeyConverter {
     getParams(capabilities: HomeyCapabilities) {
         const converters = Object.values(this.converters);
         const response: Record<"capabilities" | "properties" | "custom_data", Array<any>> = {
-            capabilities: [],
-            properties: [],
-            custom_data: []
+            capabilities: [], properties: [], custom_data: []
         };
 
         let colorCapability: any = {};
@@ -144,8 +142,7 @@ export class HomeyConverter {
     getStates(capabilities: HomeyCapabilities) {
         const converters = Object.values(this.converters);
         const response: Record<"capabilities" | "properties", Array<CapabilityState>> = {
-            capabilities: [],
-            properties: [],
+            capabilities: [], properties: []
         };
 
         converters.map(converter => {

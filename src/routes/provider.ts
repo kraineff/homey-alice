@@ -28,20 +28,20 @@ export const providerRoute = async (clientId: string, clientSecret: string) => {
                 console.log(`[Провайдер: ${path}] -> Ошибка: ${error.message}`);
             })
             .post("/unlink", async ({ token, requestId }) => {
-                await controller.unlinkAccount(token);
+                await controller.userRemove(token);
                 return { request_id: requestId };
             })
             .group("/devices", app => app
                 .get("/", async ({ token, requestId }) => {
-                    const payload = await controller.discoveryDevices(token);
+                    const payload = await controller.devicesDiscovery(token);
                     return { request_id: requestId, payload };
                 })
                 .post("/query", async ({ token, requestId, body }) => {
-                    const payload = await controller.queryDevices(token, <any>body);
+                    const payload = await controller.devicesQuery(token, <any>body);
                     return { request_id: requestId, payload };
                 })
                 .post("/action", async ({ token, requestId, body }) => {
-                    const payload = await controller.actionDevices(token, <any>body);
+                    const payload = await controller.devicesAction(token, <any>body);
                     return { request_id: requestId, payload };
                 })
             )
