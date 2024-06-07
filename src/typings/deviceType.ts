@@ -1,23 +1,23 @@
 export enum DeviceType {
-    Camera = "devices.types.camera",
     Cooking = "devices.types.cooking",
-    CoffeeMachine = "devices.types.cooking.coffee_maker",
-    Kettle = "devices.types.cooking.kettle",
-    Multicooker = "devices.types.cooking.multicooker",
-    Dishwasher = "devices.types.dishwasher",
-    Humidifier = "devices.types.humidifier",
-    Iron = "devices.types.iron",
+    CookingCoffee = "devices.types.cooking.coffee_maker",
+    CookingKettle = "devices.types.cooking.kettle",
+    CookingMulticooker = "devices.types.cooking.multicooker",
+
     Light = "devices.types.light",
+    LightCeiling = "devices.types.light.ceiling",
+    LightStrip = "devices.types.light.strip",
+
     Media = "devices.types.media_device",
-    Receiver = "devices.types.media_device.receiver",
-    Tv = "devices.types.media_device.tv",
-    TvBox = "devices.types.media_device.tv_box",
+    MediaReceiver = "devices.types.media_device.receiver",
+    MediaTv = "devices.types.media_device.tv",
+    MediaTvBox = "devices.types.media_device.tv_box",
+
     Openable = "devices.types.openable",
-    Curtain = "devices.types.openable.curtain",
-    Other = "devices.types.other",
-    PetFeeder = "devices.types.pet_feeder",
+    OpenableCurtain = "devices.types.openable.curtain",
+
     PetFountain = "devices.types.pet_drinking_fountain",
-    Purifier = "devices.types.purifier",
+    PetFeeder = "devices.types.pet_feeder",
 
     Sensor = "devices.types.sensor",
     SensorButton = "devices.types.sensor.button",
@@ -37,10 +37,18 @@ export enum DeviceType {
     MeterHeat = "devices.types.smart_meter.heat",
     MeterHotWater = "devices.types.smart_meter.hot_water",
 
+    Thermostat = "devices.types.thermostat",
+    ThermostatAc = "devices.types.thermostat.ac",
+
+    Camera = "devices.types.camera",
+    Dishwasher = "devices.types.dishwasher",
+    Humidifier = "devices.types.humidifier",
+    Iron = "devices.types.iron",
+    Other = "devices.types.other",
+    Purifier = "devices.types.purifier",
     Socket = "devices.types.socket",
     Switch = "devices.types.switch",
-    Thermostat = "devices.types.thermostat",
-    Conditioner = "devices.types.thermostat.ac",
     VacuumCleaner = "devices.types.vacuum_cleaner",
+    VentilationFan = "devices.types.ventilation.fan",
     WashingMachine = "devices.types.washing_machine"
 }
