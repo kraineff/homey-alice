@@ -21,10 +21,10 @@ export const CapabilityConverters = {
         .create("light_hue")
         .createColor("hsv", run => run
             .getHomey<number>("light_hue", value => ({ h: Math.round(value * 360), s: 100, v: 100 }))
-            .setHomey<number>("light_hue", value => value.h / 360)
             .getHomey<number>("light_saturation", value => ({ s: Math.round(value * 100), v: 100 }))
+            .getHomey<string>("light_mode", value => value === "color" && "@prev" || "@break")
+            .setHomey<number>("light_hue", value => value.h / 360)
             .setHomey<number>("light_saturation", value => value.s / 100)
-            .getHomey<string>("light_mode", value => value !== "color" && "@break" || undefined)
             .setHomey<string>("light_mode", () => "color")),
 
     light_temperature: HomeyConverter
@@ -32,8 +32,8 @@ export const CapabilityConverters = {
         .createColor("temperature_k", run => run
             .setParams({ temperature_k: { min: 1500, max: 9000 } })
             .getHomey<number>("light_temperature", value => Math.round(((((1 - value) - 0) * (9000 - 1500)) / (1 - 0)) + 1500))
+            .getHomey<string>("light_mode", value => value === "temperature" && "@prev" || "@break")
             .setHomey<number>("light_temperature", value => 1 - ((((value - 1500) * (1 - 0)) / (9000 - 1500)) + 0))
-            .getHomey<string>("light_mode", value => value !== "temperature" && "@break" || undefined)
             .setHomey<string>("light_mode", () => "temperature")),
     
     thermostat_mode: HomeyConverter
@@ -43,7 +43,7 @@ export const CapabilityConverters = {
             .setHomey<string>("thermostat_mode", value => ["off", "heat"][Number(value)]))
         .createMode("thermostat", run => run
             .setParams({ modes: ["auto", "heat", "cool"] })
-            .getHomey<string>("thermostat_mode", value => ["auto", "heat", "cool"].includes(value) && value || undefined)
+            .getHomey<string>("thermostat_mode", value => ["auto", "heat", "cool"].includes(value) && value || "@break")
             .setHomey<string>("thermostat_mode")),
         
     target_temperature: HomeyConverter
@@ -208,8 +208,8 @@ export const CapabilityConverters = {
         .create("volume_up")
         .createRange("volume", run => run
             .setParams({ retrievable: false, random_access: false, range: { min: 0, max: 1, precision: 1 } })
-            .setHomey<boolean>("volume_up", value => value === 1 && true || undefined)
-            .setHomey<boolean>("volume_down", value => value === 0 && true || undefined)),
+            .setHomey<boolean>("volume_up", value => value === 1 && true || "@break")
+            .setHomey<boolean>("volume_down", value => value === 0 && true || "@break")),
 
     volume_mute: HomeyConverter
         .create("volume_mute")
@@ -221,8 +221,8 @@ export const CapabilityConverters = {
         .create("channel_up")
         .createRange("channel", run => run
             .setParams({ retrievable: false, random_access: false, range: { min: 0, max: 1, precision: 1 } })
-            .setHomey<boolean>("channel_up", value => value === 1 && true || undefined)
-            .setHomey<boolean>("channel_down", value => value === 0 && true || undefined)),
+            .setHomey<boolean>("channel_up", value => value === 1 && true || "@break")
+            .setHomey<boolean>("channel_down", value => value === 0 && true || "@break")),
 
     locked: HomeyConverter
         .create("locked")
@@ -257,7 +257,7 @@ export const CapabilityConverters = {
         .createState(run => run
             .setParams({ split: true, retrievable: false })
             .getHomey<boolean>("button", () => false)
-            .setHomey<boolean>("button", value => value === true && value || undefined)),
+            .setHomey<boolean>("button", value => value === true && value || "@break")),
 
     speaker_playing: HomeyConverter
         .create("speaker_playing")

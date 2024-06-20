@@ -13,8 +13,7 @@ export const providerRoute = async (clientId: string, clientSecret: string) => {
 
     // Инициализация файла хранилища
     const storageExists = await storageFile.exists();
-    if (!storageExists)
-        await Bun.write(storageFile, JSON.stringify([]));
+    !storageExists && await Bun.write(storageFile, JSON.stringify([]));
     
     return new Elysia({ prefix: "/v1.0" })
         .head("/", () => {})

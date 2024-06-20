@@ -2,7 +2,7 @@ import { BunFile } from "bun";
 import { AthomCloudAPI, HomeyAPIV2 } from "homey-api";
 import { HomeyConverters } from "../services/converters";
 import { getDeviceType } from "../services/utils";
-import { ActionDevice, ActionDevicesRequest, ActionDevicesResponse, DiscoveryDevice, DiscoveryDevicesResponse, QueryDevice, QueryDevicesRequest, QueryDevicesResponse } from "../typings";
+import { ActionDevice, ActionDevicesRequest, ActionDevicesResponse, DiscoveryDevice, DiscoveryDevicesResponse, QueryDevice, QueryDevicesRequest, QueryDevicesResponse, StorageItem } from "../typings";
 import { HomeyCapabilities, HomeyConverter } from "../services/converter";
 
 export class ProviderController {
@@ -12,7 +12,7 @@ export class ProviderController {
         const storageAdapter = new AthomCloudAPI.StorageAdapter();
 
         storageAdapter.get = async () => {
-            const storageItems: any[] = await this.storageFile.json();
+            const storageItems: Array<StorageItem> = await this.storageFile.json();
             const storageItem = storageItems.find(item => item.token === token);
             return storageItem && storageItem.storage || {};
         };
@@ -20,13 +20,14 @@ export class ProviderController {
         storageAdapter.set = async (storage: any) => {
             if (!storage.user) return;
             const homeyId = storage.user.homeys[0].id;
-            const storageItems: any[] = await this.storageFile.json();
+            const storageItems: Array<StorageItem> = await this.storageFile.json();
             const storageItem = storageItems.find(item => item.homeyId === homeyId);
 
-            storageItem
-                ? (storageItem.token = token, storageItem.storage = { ...storageItem.storage, ...storage })
-                : storageItems.push({ homeyId, token, storage });
-            
+            if (storageItem !== undefined) {
+                storageItem.storage = { ...storageItem.storage, ...storage };
+                storageItem.token = token;
+            } else storageItems.push({ homeyId, token, storage });
+
             await Bun.write(this.storageFile, JSON.stringify(storageItems));
         };
 
@@ -58,7 +59,7 @@ export class ProviderController {
 
     async userRemove(token: string) {
         await this.#getAthomUser(token);
-        const storageItems: any[] = await this.storageFile.json();
+        const storageItems: Array<StorageItem> = await this.storageFile.json();
         const newStorageItems = storageItems.filter(item => item.token !== token);
         await Bun.write(this.storageFile, JSON.stringify(newStorageItems));
     }

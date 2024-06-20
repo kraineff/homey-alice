@@ -1,5 +1,5 @@
 import { HomeyAPIV2 } from "homey-api";
-import { CapabilityAction, CapabilityParams, CapabilityState } from "../typings";
+import { CapabilityAction, CapabilityState } from "../typings";
 import { makeStateBody } from "./utils";
 
 export type HomeyCapability = HomeyAPIV2.ManagerDevices.Capability & { value: any };
@@ -18,22 +18,17 @@ export class HomeyConverter {
 
     use(converter: HomeyConverter) {
         const converters = { ...this.converters };
-        const newConverters = Object.values({ ...converter.converters });
+        const convertersNew = { ...converter.converters };
 
-        newConverters.map(newConverter => {
-            const newConverterKey = `${newConverter.type},${newConverter.instance}`;
-            const currentConverter = converters[newConverterKey];
+        Object.values(convertersNew).map(converterNew => {
+            const converterKey = `${converterNew.type},${converterNew.instance}`;
+            const converterName = converters[converterKey]?.name;
 
-            if (currentConverter !== undefined) {
-                const currentConverterName = currentConverter.name;
+            converterName && Object.values(converters)
+                .map(converter => converter.name === converterName &&
+                    delete converters[`${converter.type},${converter.instance}`]);
                 
-                Object.values(converters).map(converter => {
-                    if (converter.name !== currentConverterName) return;
-                    delete converters[`${converter.type},${converter.instance}`];
-                });
-            }
-
-            converters[newConverterKey] = newConverter;
+            converters[converterKey] = converterNew;
         });
 
         this.converters = converters;
@@ -175,20 +170,14 @@ type ParamsHandler<Params> = (capabilities: HomeyCapabilities) => Partial<Params
 
 class Converter<Params extends Record<string, any>, SetValue extends any> {
     readonly category: "capabilities" | "properties";
-    private parameters: CapabilityParams;
-    private parametersRaw: Params;
+    private parameters: Params;
     private handleParams: ParamsHandler<Params>;
     private handleGet: (capabilities: HomeyCapabilities) => any;
     private handleSet: (value: any) => Record<string, any>;
 
     constructor(readonly name: string, readonly type: string, readonly instance: string) {
         this.category = type.split(".")[1] as any;
-        this.parameters = {
-            type,
-            retrievable: true, reportable: false,
-            parameters: {}
-        };
-        this.parametersRaw = {} as Params;
+        this.parameters = {} as Params;
         this.handleParams = () => ({});
         this.handleGet = () => undefined;
         this.handleSet = () => ({});
@@ -198,7 +187,7 @@ class Converter<Params extends Record<string, any>, SetValue extends any> {
         const { parse, ...parameters } = params;
         const prevHandler = this.handleParams;
         
-        this.parametersRaw = parameters as Params;
+        this.parameters = parameters as Params;
         parse && (this.handleParams = function (capabilities) {
             const prevValue = prevHandler(capabilities);
             const value = parse(capabilities);
@@ -208,96 +197,96 @@ class Converter<Params extends Record<string, any>, SetValue extends any> {
         return this;
     }
 
-    getHomey<ValueType = any>(capabilityId: string, handler?: (value: ValueType) => SetValue | undefined | "@break") {
-        const prevHandler = this.handleGet;
+    getHomey<ValueType = any>(capabilityId: string, handler?: (value: ValueType) => SetValue | "@prev" | "@break") {
+        const currentHandler = this.handleGet;
         handler = handler ?? (value => value as unknown as SetValue);
 
         this.handleGet = function (capabilities) {
-            const capability = capabilities[capabilityId];
+            const currentValue = currentHandler(capabilities);
+            try {
+                const capability = capabilities[capabilityId];
+                let capabilityValue = capability.value;
+                if (capability.getable === false && capability.type === "boolean") capabilityValue = false;
 
-            let capabilityValue = capability?.value ?? undefined;
-            if (capability?.getable === false && capability?.type === "boolean")
-                capabilityValue = false;
+                const value = capabilityValue === null && "@prev" || handler(capabilityValue);
+                if (value === "@prev") return currentValue;
+                if (value === "@break") return undefined;
+                if (typeof value === "number") return Math.abs(value);
+                if (typeof value === "object" && typeof currentValue === "object") return { ...currentValue, ...value };
 
-            const prevValue = prevHandler(capabilities);
-            const value = capabilityValue !== undefined ? handler(capabilityValue) : undefined;
-
-            if (value === "@break") return undefined;
-            if (value === undefined) return prevValue;
-            if (typeof value === "number") return Math.abs(value);
-            if (typeof value === "object" && typeof prevValue === "object") return { ...prevValue, ...value };
-            return value;
+                return value ?? undefined;
+            } catch (error) {
+                return currentValue;
+            }
         }
         
         return this;
     }
 
-    setHomey<ValueType = any>(capabilityId: string, handler?: (value: SetValue) => ValueType | undefined) {
-        const prevHandler = this.handleSet;
+    setHomey<ValueType = any>(capabilityId: string, handler?: (value: SetValue) => ValueType | "@break") {
+        const currentHandler = this.handleSet;
         handler = handler ?? (value => value as unknown as ValueType);
 
         this.handleSet = function (capabilityValue) {
-            capabilityValue = capabilityValue ?? undefined;
-            const prevValue = prevHandler(capabilityValue);
-            const value = handler(capabilityValue);
-            prevValue[capabilityId] = value ?? undefined;
-            return prevValue;
+            const currentValue = currentHandler(capabilityValue);
+            try {
+                capabilityValue = capabilityValue ?? undefined;
+                const value = handler(capabilityValue);
+                return {
+                    ...currentValue,
+                    [capabilityId]: (value === "@break" || value === null || value === undefined) ? undefined : value
+                };
+            } catch (error) {
+                return currentValue;
+            }
         }
         
         return this;
     }
 
     convertParams(capabilities: HomeyCapabilities) {
-        const parametersRaw: Record<string, any> = {
-            ...this.parametersRaw,
+        const parameters: Record<string, any> = {
+            ...this.parameters,
             ...this.handleParams(capabilities)
         };
-        
-        const parameters = { ...this.parameters };
-        if (parametersRaw.retrievable !== undefined)
-            parameters.retrievable = parametersRaw.retrievable;
 
-        parameters.parameters = {
-            ...parameters.parameters,
-            ...(["devices.capabilities.mode",
-                 "devices.capabilities.range",
-                 "devices.capabilities.toggle",
-                 "devices.properties.float",
-                 "devices.properties.event"].includes(this.type) && {
-                instance: this.instance
-            }),
-            ...((["hsv", "rgb"].includes(this.instance)) && {
-                color_model: this.instance
-            }),
-            ...(("temperature_k" === this.instance && parametersRaw.temperature_k) && {
-                temperature_k: parametersRaw.temperature_k
-            }),
-            ...(("scene" === this.instance && parametersRaw.scenes) && {
-                color_scene: {
-                    scenes: parametersRaw.scenes.map((id: string) => ({ id }))
-                }
-            }),
-            ...((parametersRaw.split ?? undefined) && {
-                split: parametersRaw.split
-            }),
-            ...((parametersRaw.random_access ?? undefined) && {
-                random_access: parametersRaw.random_access
-            }),
-            ...((parametersRaw.unit ?? undefined) && {
-                unit: `unit.${parametersRaw.unit}`
-            }),
-            ...((parametersRaw.modes ?? undefined) && {
-                modes: parametersRaw.modes.map((value: string) => ({ value }))
-            }),
-            ...((parametersRaw.events ?? undefined) && {
-                events: parametersRaw.events.map((value: string) => ({ value }))
-            }),
-            ...((parametersRaw.range ?? undefined) && {
-                range: parametersRaw.range
-            })
+        return {
+            type: this.type,
+            retrievable: parameters.retrievable ?? true,
+            reportable: false,
+            parameters: {
+                ...((this.type !== "devices.capabilities.on_off" && this.type !== "devices.capabilities.color_setting") && {
+                    instance: this.instance
+                }),
+                ...((this.instance === "hsv" || this.instance === "rgb") && {
+                    color_model: this.instance
+                }),
+                ...((parameters.temperature_k !== undefined && this.instance === "temperature_k") && {
+                    temperature_k: parameters.temperature_k
+                }),
+                ...((parameters.scenes !== undefined && this.instance === "scene") && {
+                    color_scene: { scenes: parameters.scenes.map((id: string) => ({ id })) }
+                }),
+                ...((parameters.split !== undefined) && {
+                    split: parameters.split
+                }),
+                ...((parameters.random_access !== undefined) && {
+                    random_access: parameters.random_access
+                }),
+                ...((parameters.range !== undefined) && {
+                    range: parameters.range
+                }),
+                ...((parameters.unit !== undefined) && {
+                    unit: `unit.${parameters.unit}`
+                }),
+                ...((parameters.modes !== undefined) && {
+                    modes: parameters.modes.map((value: string) => ({ value }))
+                }),
+                ...((parameters.events !== undefined) && {
+                    events: parameters.events.map((value: string) => ({ value }))
+                })
+            }
         };
-
-        return parameters;
     }
 
     convertGet(capabilities: HomeyCapabilities) {
