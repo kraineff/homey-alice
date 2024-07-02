@@ -6,7 +6,11 @@ import { ActionDevice, ActionDevicesRequest, ActionDevicesResponse, DiscoveryDev
 import { HomeyCapabilities, HomeyConverter } from "../services/converter";
 
 export class ProviderController {
-    constructor(private clientId: string, private clientSecret: string, private storageFile: BunFile) {}
+    #homeyApis: Record<string, any>;
+
+    constructor(private clientId: string, private clientSecret: string, private storageFile: BunFile) {
+        this.#homeyApis = {};
+    }
 
     #getStorageAdapter(token: string) {
         const storageAdapter = new AthomCloudAPI.StorageAdapter();
@@ -51,9 +55,14 @@ export class ProviderController {
     }
 
     async #getHomeyAPI(token: string) {
+        if (token in this.#homeyApis) return this.#homeyApis[token];
+        
         const user = await this.#getAthomUser(token);
         const homey = await user.getFirstHomey();
         const homeyApi = await homey.authenticate({ strategy: "cloud" });
+
+        setTimeout(() => delete this.#homeyApis[token], 5 * 60 * 1000);
+        this.#homeyApis[token] = homeyApi;
         return homeyApi as any;
     }
 
