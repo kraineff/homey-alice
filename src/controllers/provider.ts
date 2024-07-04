@@ -6,11 +6,9 @@ import { ActionDevice, ActionDevicesRequest, ActionDevicesResponse, DiscoveryDev
 import { HomeyCapabilities, HomeyConverter } from "../services/converter";
 
 export class ProviderController {
-    #homeyApis: Record<string, any>;
+    #homeyApis: Record<string, any> = {};
 
-    constructor(private clientId: string, private clientSecret: string, private storageFile: BunFile) {
-        this.#homeyApis = {};
-    }
+    constructor(private clientId: string, private clientSecret: string, private storageFile: BunFile) {}
 
     #getStorageAdapter(token: string) {
         const storageAdapter = new AthomCloudAPI.StorageAdapter();
@@ -104,10 +102,12 @@ export class ProviderController {
             driverConverter && converter.use(driverConverter);
 
             const params = converter.getParams(capabilities);
-            device.capabilities = params.capabilities;
-            device.properties = params.properties;
-            device.custom_data = params.custom_data;
-            device.custom_data.length && payload.devices.push(device);
+            if (params.custom_data.length) {
+                device.capabilities = params.capabilities;
+                device.properties = params.properties;
+                device.custom_data = params.custom_data;
+                payload.devices.push(device);
+            }
         });
 
         return payload;
@@ -120,8 +120,7 @@ export class ProviderController {
             devices: []
         };
 
-        const queries = body.devices;
-        queries.map(query => {
+        body.devices.map(query => {
             const device: QueryDevice = {
                 id: query.id, capabilities: [], properties: []
             };
@@ -148,15 +147,15 @@ export class ProviderController {
             devices: []
         };
         
-        const actions = body.payload.devices;
-        await Promise.all(actions.map(async action => {
+        await Promise.all(body.payload.devices.map(async action => {
+            const deviceId = action.id;
             const device: ActionDevice = {
-                id: action.id, capabilities: []
+                id: deviceId, capabilities: []
             };
 
             const converter = this.#mergeConverters(action.custom_data);
             const converterSet = async (capabilityId: string, value: any) =>
-                homeyApi.devices.setCapabilityValue({ capabilityId, deviceId: action.id, value });
+                homeyApi.devices.setCapabilityValue({ capabilityId, deviceId, value });
 
             const states = await converter.setStates(action.capabilities, converterSet);
             device.capabilities = states.capabilities;

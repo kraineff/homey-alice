@@ -107,29 +107,26 @@ export class HomeyConverter {
     }
 
     getParams(capabilities: HomeyCapabilities) {
-        const converters = Object.values(this.converters);
         const response: Record<"capabilities" | "properties" | "custom_data", Array<any>> = {
             capabilities: [], properties: [], custom_data: []
         };
 
-        let colorCapability: any = {};
+        let capabilityColor: any;
         const converterIds = new Set();
-        converters.map(converter => {
+        Object.values(this.converters).map(converter => {
             const capability = converter.convertParams(capabilities);
             converterIds.add(converter.name);
 
-            if (capability.type === "devices.capabilities.color_setting")
-                return colorCapability = {
-                    type: "devices.capabilities.color_setting",
-                    retrievable: colorCapability.retrievable ?? capability.retrievable,
-                    reportable: colorCapability.reportable ?? capability.reportable,
-                    parameters: { ...(colorCapability.parameters || {}), ...capability.parameters }
-                };
+            if (capability.type === "devices.capabilities.color_setting") {
+                if (!capabilityColor) capabilityColor = capability;
+                else capabilityColor.parameters = { ...capabilityColor.parameters, ...capability.parameters };
+                return;
+            }
 
             response[converter.category].push(capability);
         });
 
-        Object.keys(colorCapability).length && response.capabilities.push(colorCapability);
+        capabilityColor && response.capabilities.push(capabilityColor);
         response.custom_data = [...converterIds];
         return response;
     }
@@ -232,10 +229,8 @@ class Converter<Params extends Record<string, any>, SetValue extends any> {
             try {
                 capabilityValue = capabilityValue ?? undefined;
                 const value = handler(capabilityValue);
-                return {
-                    ...currentValue,
-                    [capabilityId]: (value === "@break" || value === null || value === undefined) ? undefined : value
-                };
+                currentValue[capabilityId] = (value === "@break" || value === null || value === undefined) ? undefined : value;
+                return currentValue;
             } catch (error) {
                 return currentValue;
             }
@@ -291,7 +286,8 @@ class Converter<Params extends Record<string, any>, SetValue extends any> {
 
     convertGet(capabilities: HomeyCapabilities) {
         const value = this.handleGet(capabilities);
-        return value !== undefined ? makeStateBody(this.type, this.instance, { value }) : undefined;
+        if (value !== undefined) return makeStateBody(this.type, this.instance, { value });
+        return undefined;
     }
 
     async convertSet(value: any, handler: (capabilityId: string, value: any) => Promise<any>) {
