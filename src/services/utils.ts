@@ -45,7 +45,8 @@ function getDeviceTypeByClass(deviceClass: string) {
         case "tv"                : return DeviceType.MediaTv;
         case "vacuumcleaner"     : return DeviceType.VacuumCleaner;
         case "windowcoverings"   : return DeviceType.OpenableCurtain;
-        
+
+        // >=12.0.0
         case "airconditioning"   : return DeviceType.ThermostatAc;
         case "bicycle"           : return DeviceType.Other;
         case "battery"           : return DeviceType.Sensor;
@@ -65,7 +66,7 @@ function getDeviceTypeByClass(deviceClass: string) {
         case "gameconsole"       : return DeviceType.Other;
         case "grill"             : return DeviceType.Cooking;
         case "heatpump"          : return DeviceType.Thermostat;
-        case "hood"              : return DeviceType.Ventilatiion;
+        case "hood"              : return DeviceType.Ventilation;
         case "humidifier"        : return DeviceType.Humidifier;
         case "mediaplayer"       : return DeviceType.Media;
         case "airtreatment"      : return DeviceType.Purifier;
