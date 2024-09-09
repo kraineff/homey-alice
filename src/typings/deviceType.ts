@@ -15,6 +15,7 @@ export enum DeviceType {
 
     Openable = "devices.types.openable",
     OpenableCurtain = "devices.types.openable.curtain",
+    OpenableValve = "devices.types.openable.valve",
 
     PetFountain = "devices.types.pet_drinking_fountain",
     PetFeeder = "devices.types.pet_feeder",
@@ -40,6 +41,9 @@ export enum DeviceType {
     Thermostat = "devices.types.thermostat",
     ThermostatAc = "devices.types.thermostat.ac",
 
+    Ventilation = "devices.types.ventilation",
+    VentilationFan = "devices.types.ventilation.fan",
+    
     Camera = "devices.types.camera",
     Dishwasher = "devices.types.dishwasher",
     Humidifier = "devices.types.humidifier",
@@ -49,6 +53,5 @@ export enum DeviceType {
     Socket = "devices.types.socket",
     Switch = "devices.types.switch",
     VacuumCleaner = "devices.types.vacuum_cleaner",
-    VentilationFan = "devices.types.ventilation.fan",
     WashingMachine = "devices.types.washing_machine"
 }
