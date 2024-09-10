@@ -1,4 +1,5 @@
 import { HomeyConverter } from "../converter";
+import { DeviceType } from "../../typings";
 
 export const DeviceConverters = {
     "codes.lucasvdh.android-tv:remote": HomeyConverter
@@ -42,7 +43,7 @@ export const DeviceConverters = {
             .getHomey<boolean>("alarm_bin_removed", value => ["closed", "opened"][Number(value)])),
     
     "com.nokia.health:user": HomeyConverter
-        .create("com.nokia.health:user")
+        .create("com.nokia.health:user", DeviceType.Meter)
         .createFloat("temperature", run => run
             .setParams({ unit: "temperature.celsius" })
             .getHomey<number>("nh_measure_body_temperature"))

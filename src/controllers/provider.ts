@@ -103,6 +103,7 @@ export class ProviderController {
 
             const params = converter.getParams(capabilities);
             if (params.custom_data.length) {
+                device.type = params.type || device.type;
                 device.capabilities = params.capabilities;
                 device.properties = params.properties;
                 device.custom_data = params.custom_data;

@@ -10,10 +10,10 @@ type ConverterBuilder<Params, SetValue> =
 export class HomeyConverter {
     private converters: Record<string, Converter<any, any>> = {};
 
-    constructor(private name: string) {}
+    constructor(private name: string, private type?: string) {}
 
-    static create(name: string) {
-        return new HomeyConverter(name);
+    static create(name: string, type?: string) {
+        return new HomeyConverter(name, type);
     }
 
     use(converter: HomeyConverter) {
@@ -107,7 +107,7 @@ export class HomeyConverter {
     }
 
     getParams(capabilities: HomeyCapabilities) {
-        const response: Record<"capabilities" | "properties" | "custom_data", Array<any>> = {
+        const response: any = {
             capabilities: [], properties: [], custom_data: []
         };
 
@@ -128,6 +128,7 @@ export class HomeyConverter {
 
         capabilityColor && response.capabilities.push(capabilityColor);
         response.custom_data = [...converterIds];
+        response.type = this.type;
         return response;
     }
 
