@@ -31,6 +31,7 @@ export class HomeyConverter {
             converters[converterKey] = converterNew;
         });
 
+        this.type = converter.type || this.type;
         this.converters = converters;
         return this;
     }
