@@ -79,5 +79,11 @@ export const DeviceConverters = {
         .createMode("program", run => run
             .setParams({ modes: ["auto", "dry", "cool", "heat", "fan_only"] })
             .getHomey<string>("operation_mode", value => (({ Auto: "auto", Dry: "dry", Cool: "cool", Heat: "heat", Fan: "fan_only" } as any)[value]) ?? "@break")
-            .setHomey<string>("operation_mode", value => ({ auto: "Auto", dry: "Dry", cool: "Cool", heat: "Heat", fan_only: "Fan" }[value])!))
+            .setHomey<string>("operation_mode", value => ({ auto: "Auto", dry: "Dry", cool: "Cool", heat: "Heat", fan_only: "Fan" }[value])!)),
+    
+    "com.tuya:thermostat": HomeyConverter
+        .create("com.tuya:thermostat")
+        .createToggle("controls_locked", run => run
+            .getHomey<boolean>("child_lock")
+            .setHomey<boolean>("child_lock"))
 };
