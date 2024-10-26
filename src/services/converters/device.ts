@@ -81,6 +81,19 @@ export const DeviceConverters = {
             .getHomey<string>("operation_mode", value => (({ Auto: "auto", Dry: "dry", Cool: "cool", Heat: "heat", Fan: "fan_only" } as any)[value]) ?? "@break")
             .setHomey<string>("operation_mode", value => ({ auto: "Auto", dry: "Dry", cool: "Cool", heat: "Heat", fan_only: "Fan" }[value])!)),
     
+    "com.xiaomi-mi:airrtc.agl001": HomeyConverter
+        .create("com.xiaomi-mi:airrtc.agl001")
+        .createState(run => run
+            .getHomey<string>("thermostat_mode_AqaraTRV", value => ({ "off": false, "manual": true })[value] ?? "@break")
+            .setHomey<string>("thermostat_mode_AqaraTRV", value => ["off", "manual"][Number(value)]))
+        .createMode("thermostat", run => run
+            .setParams({ modes: ["auto"] })
+            .getHomey<string>("thermostat_mode_AqaraTRV", value => value === "away" && "auto" || "@break")
+            .setHomey<string>("thermostat_mode_AqaraTRV", value => value === "auto" && "away" || "@break"))
+        .createToggle("controls_locked", run => run
+            .getHomey<boolean>("child_lock")
+            .setHomey<boolean>("child_lock")),
+    
     "com.tuya:thermostat": HomeyConverter
         .create("com.tuya:thermostat")
         .createToggle("controls_locked", run => run
