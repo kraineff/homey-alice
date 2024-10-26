@@ -92,7 +92,10 @@ export const DeviceConverters = {
             .setHomey<string>("thermostat_mode_AqaraTRV", value => value === "auto" && "away" || "@break"))
         .createToggle("controls_locked", run => run
             .getHomey<boolean>("child_lock")
-            .setHomey<boolean>("child_lock")),
+            .setHomey<boolean>("child_lock"))
+        .createEvent("open", run => run
+            .setParams({ events: ["closed", "opened"] })
+            .getHomey<boolean>("alarm_window", value => ["closed", "opened"][Number(value)])),
     
     "com.tuya:thermostat": HomeyConverter
         .create("com.tuya:thermostat")
