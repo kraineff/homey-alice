@@ -1,5 +1,5 @@
 module.exports = {
   name: "homey",
-  script: "src/index.ts",
+  script: "server.js",
   interpreter: "/root/.bun/bin/bun"
 };
