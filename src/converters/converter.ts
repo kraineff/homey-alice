@@ -10,7 +10,7 @@ type ConverterBuilder<Params, SetValue> =
 export class HomeyConverter {
     private converters: Record<string, Converter<any, any>> = {};
 
-    constructor(private name: string, private type?: string) {}
+    constructor(readonly name: string, private type?: string) {}
 
     static create(name: string, type?: string) {
         return new HomeyConverter(name, type);
