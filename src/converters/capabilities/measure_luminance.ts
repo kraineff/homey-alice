@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("measure_luminance")
     .createFloat("illumination", run => run
         .setParams({ unit: "illumination.lux" })

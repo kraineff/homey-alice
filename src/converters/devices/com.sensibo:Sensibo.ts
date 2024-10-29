@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("com.sensibo:Sensibo")
     .createState(run => run
         .getHomey<boolean>("se_onoff")

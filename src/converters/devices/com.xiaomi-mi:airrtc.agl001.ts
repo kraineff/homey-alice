@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("com.xiaomi-mi:airrtc.agl001")
     .createState(run => run
         .getHomey<string>("thermostat_mode_AqaraTRV", value => ({ "off": false, "manual": true })[value] ?? "@break")

@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("windowcoverings_set")
     .createRange("open", run => run
         .setParams({

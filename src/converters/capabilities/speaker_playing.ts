@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("speaker_playing")
     .createState(run => run
         .getHomey<boolean>("speaker_playing")

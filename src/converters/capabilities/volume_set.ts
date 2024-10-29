@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default  HomeyConverter
+export default () => HomeyConverter
     .create("volume_set")
     .createRange("volume", run => run
         .setParams({

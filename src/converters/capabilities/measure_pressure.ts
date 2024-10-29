@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("measure_pressure")
     .createFloat("pressure", run => run
         .setParams({ unit: "pressure.bar" })

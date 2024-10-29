@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("button")
     .createState(run => run
         .setParams({ split: true, retrievable: false })

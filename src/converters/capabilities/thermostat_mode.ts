@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("thermostat_mode")
     .createState(run => run
         .getHomey<string>("thermostat_mode", value => ["heat", "auto", "cool"].includes(value))

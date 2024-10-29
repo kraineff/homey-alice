@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("alarm_contact")
     .createEvent("open", run => run
         .setParams({ events: ["closed", "opened"] })

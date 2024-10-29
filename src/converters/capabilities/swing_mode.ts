@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("swing_mode")
     .createMode("cleanup_mode", run => run
         .setParams({ modes: ["vertical", "horizontal", "auto"] })

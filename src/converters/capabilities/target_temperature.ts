@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("target_temperature")
     .createRange("temperature", run => run
         .setParams({

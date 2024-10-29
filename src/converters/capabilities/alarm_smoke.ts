@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("alarm_smoke")
     .createEvent("smoke", run => run
         .setParams({ events: ["not_detected", "detected"] })

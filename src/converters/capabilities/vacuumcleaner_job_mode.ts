@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("vacuumcleaner_job_mode")
     .createMode("cleanup_mode", run => run
         .setParams({ modes: ["normal", "high", "turbo", "wet_cleaning", "auto"] })

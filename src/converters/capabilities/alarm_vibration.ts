@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("alarm_vibration")
     .createEvent("vibration", run => run
         .setParams({ events: ["vibration"] })

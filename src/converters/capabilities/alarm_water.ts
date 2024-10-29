@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("alarm_water")
     .createEvent("water_leak", run => run
         .setParams({ events: ["dry", "leak"] })

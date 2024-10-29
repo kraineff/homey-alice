@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("windowcoverings_closed")
     .createState(run => run
         .getHomey<boolean>("windowcoverings_closed", value => !value)

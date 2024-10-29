@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("light_temperature")
     .createColor("temperature_k", run => run
         .setParams({ temperature_k: { min: 1500, max: 9000 } })

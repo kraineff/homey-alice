@@ -1,7 +1,7 @@
 import { HomeyConverter } from "../converter";
 import { DeviceType } from "../../typings";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("com.nokia.health:user", DeviceType.Meter)
     .createFloat("temperature", run => run
         .setParams({ unit: "temperature.celsius" })

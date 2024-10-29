@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("alarm_battery")
     .createEvent("battery_level", run => run
         .setParams({ events: ["normal", "low"] })

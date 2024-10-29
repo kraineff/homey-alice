@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("light_hue")
     .createColor("hsv", run => run
         .getHomey<number>("light_hue", value => ({ h: Math.round(value * 360), s: 100, v: 100 }))

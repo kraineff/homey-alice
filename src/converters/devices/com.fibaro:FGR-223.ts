@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("com.fibaro:FGR-223")
     .createRange("open", run => run
         .setParams({

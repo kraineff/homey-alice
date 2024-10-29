@@ -1,6 +1,6 @@
 import { HomeyConverter } from "../converter";
 
-export default HomeyConverter
+export default () => HomeyConverter
     .create("oscillating")
     .createToggle("oscillation", run => run
         .getHomey<boolean>("oscillating")
