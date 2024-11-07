@@ -8,12 +8,7 @@ const userHeaders = t.Object({
 });
 
 export const providerRoute = async (clientId: string, clientSecret: string) => {
-    const storageFile = Bun.file("storage.json");
-    const controller = new ProviderController(clientId, clientSecret, storageFile);
-
-    // Инициализация файла хранилища
-    const storageExists = await storageFile.exists();
-    !storageExists && await Bun.write(storageFile, JSON.stringify([]));
+    const controller = new ProviderController(clientId, clientSecret);
     
     return new Elysia({ prefix: "/v1.0" })
         .head("/", () => {})

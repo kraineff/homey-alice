@@ -7,8 +7,10 @@
     "restart": "bun run build && pm2 restart pm2.config.js"
   },
   "dependencies": {
+    "@prisma/client": "5.22.0",
     "elysia": "^1.1.12",
-    "homey-api": "^3.6.3"
+    "homey-api": "^3.6.3",
+    "prisma": "^5.22.0"
   },
   "devDependencies": {
     "bun-types": "^1.1.27"

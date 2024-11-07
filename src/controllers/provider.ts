@@ -1,34 +1,43 @@
-import { BunFile } from "bun";
 import { AthomCloudAPI, HomeyAPIV2 } from "homey-api";
 import { getDeviceType, HomeyCapabilities, HomeyConverters } from "../converters";
 import { ActionDevice, ActionDevicesRequest, ActionDevicesResponse, DiscoveryDevice, DiscoveryDevicesResponse, QueryDevice, QueryDevicesRequest, QueryDevicesResponse, StorageItem } from "../typings";
+import { PrismaClient } from "@prisma/client";
 
 export class ProviderController {
     #homeyApis: Record<string, any> = {};
 
-    constructor(private clientId: string, private clientSecret: string, private storageFile: BunFile) {}
+    constructor(private clientId: string, private clientSecret: string) {}
 
     #getStorageAdapter(token: string) {
         const storageAdapter = new AthomCloudAPI.StorageAdapter();
 
         storageAdapter.get = async () => {
-            const storageItems: Array<StorageItem> = await this.storageFile.json();
-            const storageItem = storageItems.find(item => item.token === token);
-            return storageItem && storageItem.storage || {};
+            const prisma = new PrismaClient();
+            const user = await prisma.user.findFirst({ where: { token } });
+            return user && JSON.parse(user.storage) || {};
         };
 
         storageAdapter.set = async (storage: any) => {
             if (!storage.user) return;
             const homeyId = storage.user.homeys[0].id;
-            const storageItems: Array<StorageItem> = await this.storageFile.json();
-            const storageItem = storageItems.find(item => item.homeyId === homeyId);
+            
+            const prisma = new PrismaClient();
+            const user = await prisma.user.findFirst({ where: { id: homeyId } });
 
-            if (storageItem !== undefined) {
-                storageItem.storage = { ...storageItem.storage, ...storage };
-                storageItem.token = token;
-            } else storageItems.push({ homeyId, token, storage });
-
-            await Bun.write(this.storageFile, JSON.stringify(storageItems));
+            if (user) await prisma.user.update({
+                where: { id: homeyId },
+                data: {
+                    token: token,
+                    storage: JSON.stringify({ ...JSON.parse(user.storage), ...storage })
+                }
+            });
+            else await prisma.user.create({
+                data: {
+                    id: homeyId,
+                    token: token,
+                    storage: JSON.stringify(storage)
+                }
+            });
         };
 
         return storageAdapter;
@@ -64,9 +73,9 @@ export class ProviderController {
 
     async userRemove(token: string) {
         await this.#getAthomUser(token);
-        const storageItems: Array<StorageItem> = await this.storageFile.json();
-        const newStorageItems = storageItems.filter(item => item.token !== token);
-        await Bun.write(this.storageFile, JSON.stringify(newStorageItems));
+        const prisma = new PrismaClient();
+        const user = await prisma.user.findFirst({ where: { token } });
+        user && await prisma.user.delete({ where: { id: user.id } });
     }
 
     async devicesDiscovery(token: string) {
