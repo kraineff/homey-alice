@@ -8,7 +8,7 @@ class Converters {
         converterName = converterName.replace("homey:app:", "");
         if (this.#converters[converterName]) return this.#converters[converterName];
 
-        const directory = import.meta.dir + "/src/converters" + (!converterName.includes(":") ? "/capabilities/" : "/devices/");
+        const directory = import.meta.dir + (!converterName.includes(":") ? "/capabilities/" : "/devices/");
         const converterFile = converterName + ".ts";
         const converterPath = directory + converterFile;
         const converters = await readdir(directory);

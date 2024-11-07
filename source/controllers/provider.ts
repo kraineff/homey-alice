@@ -19,9 +19,8 @@ export class ProviderController {
 
         storageAdapter.set = async (storage: any) => {
             if (!storage.user) return;
-            const homeyId = storage.user.homeys[0].id;
-            
             const prisma = new PrismaClient();
+            const homeyId = storage.user.homeys[0].id;
             const user = await prisma.user.findFirst({ where: { id: homeyId } });
 
             if (user) await prisma.user.update({
