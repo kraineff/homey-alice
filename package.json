@@ -2,7 +2,7 @@
   "name": "homey-alice",
   "module": "src/index.js",
   "scripts": {
-    "build": "bun build --minify src/index.ts --outfile server.js",
+    "build": "bun build --minify src/index.ts --outfile server.js --target bun",
     "start": "bun run build && pm2 delete pm2.config.js ; pm2 start pm2.config.js",
     "restart": "bun run build && pm2 restart pm2.config.js"
   },

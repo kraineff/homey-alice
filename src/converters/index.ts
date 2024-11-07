@@ -2,31 +2,21 @@ import { readdir } from "node:fs/promises";
 import { HomeyConverter } from "./converter";
 
 class Converters {
-    #converters: Record<string, {
-        converter: HomeyConverter;
-        timer: Timer;
-    }> = {};
+    #converters: Record<string, HomeyConverter> = {};
 
     async get(converterName: string) {
         converterName = converterName.replace("homey:app:", "");
-        if (this.#converters[converterName]) {
-            clearTimeout(this.#converters[converterName].timer);
-            this.#converters[converterName].timer =
-                setTimeout(() => delete this.#converters[converterName], 30 * 60 * 1000);
-            return this.#converters[converterName].converter;
-        }
+        if (this.#converters[converterName]) return this.#converters[converterName];
 
-        const directory = import.meta.dir + (!converterName.includes(":") ? "/capabilities/" : "/devices/");
+        const directory = import.meta.dir + "/src/converters" + (!converterName.includes(":") ? "/capabilities/" : "/devices/");
         const converterFile = converterName + ".ts";
         const converterPath = directory + converterFile;
         const converters = await readdir(directory);
 
         if (converters.includes(converterFile)) {
             const converter = (await import(converterPath)).default() as HomeyConverter;
-            this.#converters[converterName].converter = converter;
-            this.#converters[converterName].timer =
-                setTimeout(() => delete this.#converters[converterName], 30 * 60 * 1000);
-            return this.#converters[converterName].converter;
+            this.#converters[converterName] = converter
+            return this.#converters[converterName];
         }
         return HomeyConverter.create("unknown");
     }
