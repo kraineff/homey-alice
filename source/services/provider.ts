@@ -1,9 +1,9 @@
 import { AthomCloudAPI, HomeyAPIV2 } from "homey-api";
 import { getDeviceType, HomeyCapabilities, HomeyConverters } from "../converters";
-import { ActionDevice, ActionDevicesRequest, ActionDevicesResponse, DiscoveryDevice, DiscoveryDevicesResponse, QueryDevice, QueryDevicesRequest, QueryDevicesResponse, StorageItem } from "../typings";
+import { ActionDevice, ActionDevicesRequest, ActionDevicesResponse, DiscoveryDevice, DiscoveryDevicesResponse, QueryDevice, QueryDevicesRequest, QueryDevicesResponse } from "../typings";
 import { PrismaClient } from "@prisma/client";
 
-export class ProviderController {
+export class ProviderService {
     #homeyApis: Record<string, any> = {};
 
     constructor(private clientId: string, private clientSecret: string) {}
@@ -65,9 +65,9 @@ export class ProviderController {
         const homey = await user.getFirstHomey();
         const homeyApi = await homey.authenticate({ strategy: "cloud" });
 
-        setTimeout(() => delete this.#homeyApis[token], 5 * 60 * 1000);
+        setTimeout(() => delete this.#homeyApis[token], 30 * 60 * 1000);
         this.#homeyApis[token] = homeyApi;
-        return homeyApi as any;
+        return this.#homeyApis[token];
     }
 
     async userRemove(token: string) {

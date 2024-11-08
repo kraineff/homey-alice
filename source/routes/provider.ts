@@ -1,5 +1,5 @@
 import { Elysia, t } from "elysia";
-import { ProviderController } from "../controllers/provider";
+import { ProviderService } from "../services/provider";
 
 const userHeaders = t.Object({
     "authorization": t.TemplateLiteral("Bearer ${string}"),    
@@ -8,7 +8,7 @@ const userHeaders = t.Object({
 });
 
 export const providerRoute = async (clientId: string, clientSecret: string) => {
-    const controller = new ProviderController(clientId, clientSecret);
+    const service = new ProviderService(clientId, clientSecret);
     
     return new Elysia({ prefix: "/v1.0" })
         .head("/", () => {})
@@ -22,20 +22,20 @@ export const providerRoute = async (clientId: string, clientSecret: string) => {
                 console.log(`[Провайдер: ${path}] -> Ошибка: ${error.message}`);
             })
             .post("/unlink", async ({ token, requestId }) => {
-                await controller.userRemove(token);
+                await service.userRemove(token);
                 return { request_id: requestId };
             })
             .group("/devices", app => app
                 .get("/", async ({ token, requestId }) => {
-                    const payload = await controller.devicesDiscovery(token);
+                    const payload = await service.devicesDiscovery(token);
                     return { request_id: requestId, payload };
                 })
                 .post("/query", async ({ token, requestId, body }) => {
-                    const payload = await controller.devicesQuery(token, <any>body);
+                    const payload = await service.devicesQuery(token, <any>body);
                     return { request_id: requestId, payload };
                 })
                 .post("/action", async ({ token, requestId, body }) => {
-                    const payload = await controller.devicesAction(token, <any>body);
+                    const payload = await service.devicesAction(token, <any>body);
                     return { request_id: requestId, payload };
                 })
             )
