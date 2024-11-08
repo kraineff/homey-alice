@@ -3,7 +3,7 @@ import { HomeyConverter } from "../converter";
 export default () => HomeyConverter
     .create("target_temperature")
     .createRange("temperature", run => run
-        .setParams({
+        .setParameters({
             unit: "temperature.celsius",
             parse: ({ target_temperature }) => ({
                 range: {
@@ -13,5 +13,5 @@ export default () => HomeyConverter
                 }
             }),
         })
-        .getHomey<number>("target_temperature")
-        .setHomey<number>("target_temperature"));
+        .getCapability<number>("target_temperature")
+        .setCapability<number>("target_temperature"));

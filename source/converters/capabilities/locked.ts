@@ -3,5 +3,5 @@ import { HomeyConverter } from "../converter";
 export default () => HomeyConverter
     .create("locked")
     .createState(run => run
-        .getHomey<boolean>("locked", value => !value)
-        .setHomey<boolean>("locked", value => !value));
+        .getCapability<boolean>("locked", value => !value)
+        .setCapability<boolean>("locked", value => !value));

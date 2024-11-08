@@ -1,6 +1,6 @@
 import { AthomCloudAPI, HomeyAPIV2 } from "homey-api";
-import { getDeviceType, HomeyCapabilities, HomeyConverters } from "../converters";
-import { ActionDevice, ActionDevicesRequest, ActionDevicesResponse, DiscoveryDevice, DiscoveryDevicesResponse, QueryDevice, QueryDevicesRequest, QueryDevicesResponse } from "../typings";
+import { HomeyConverters } from "../converters";
+import { ActionDevice, ActionDevicesRequest, ActionDevicesResponse, DiscoveryDevicesResponse, QueryDevicesRequest, QueryDevicesResponse } from "../typings";
 import { PrismaClient } from "@prisma/client";
 
 export class ProviderService {
@@ -77,7 +77,7 @@ export class ProviderService {
         user && await prisma.user.delete({ where: { id: user.id } });
     }
 
-    async devicesDiscovery(token: string) {
+    async getDevices(token: string) {
         const homeyApi = await this.#getHomeyAPI(token);
         const homeyDevices: Record<string, HomeyAPIV2.ManagerDevices.Device> = await homeyApi.devices.getDevices();
         const homeyZones: Record<string, HomeyAPIV2.ManagerZones.Zone> = await homeyApi.zones.getZones();
@@ -87,38 +87,17 @@ export class ProviderService {
 
         await Promise.all(
             Object.values(homeyDevices).map(async homeyDevice => {
-                const device: DiscoveryDevice = {
-                    id: homeyDevice.id,
-                    name: homeyDevice.name,
-                    room: homeyZones[homeyDevice.zone].name,
-                    type: getDeviceType(homeyDevice),
-                    custom_data: [], capabilities: [], properties: []
-                };
-    
-                // Специальные команды
-                const note = homeyDevice.note;
-                if (note && note.includes("@hidden;")) return;
-                if (note && note.includes("@type="))
-                    device.type = `devices.types.${note.split("@type=")[1].split(";")[0]}`;
-    
-                const capabilities: HomeyCapabilities = homeyDevice.capabilitiesObj as any;
-                const converter = await HomeyConverters.merge([...Object.keys(capabilities), homeyDevice.driverId]);
-    
-                const params = converter.getParams(capabilities);
-                if (params.custom_data.length) {
-                    device.type = params.type || device.type;
-                    device.capabilities = params.capabilities;
-                    device.properties = params.properties;
-                    device.custom_data = params.custom_data;
-                    payload.devices.push(device);
-                }
+                const converterNames = Object.keys(homeyDevice.capabilitiesObj);
+                const converter = await HomeyConverters.merge([...converterNames, homeyDevice.driverId]);
+                const device = converter.getDevice(homeyDevice, homeyZones);
+                device && payload.devices.push(device);
             })
         );
 
         return payload;
     }
 
-    async devicesQuery(token: string, body: QueryDevicesRequest) {
+    async getStates(token: string, body: QueryDevicesRequest) {
         const homeyApi = await this.#getHomeyAPI(token);
         const homeyDevices: Record<string, HomeyAPIV2.ManagerDevices.Device> = await homeyApi.devices.getDevices();
         const payload: QueryDevicesResponse["payload"] = {
@@ -127,20 +106,9 @@ export class ProviderService {
 
         await Promise.all(
             body.devices.map(async query => {
-                const device: QueryDevice = {
-                    id: query.id, capabilities: [], properties: []
-                };
-                
-                const homeyDevice = homeyDevices[query.id];
-                if (!homeyDevice) device.error_code = "DEVICE_NOT_FOUND";
-                else if (homeyDevice && (!homeyDevice.ready || !homeyDevice.available)) device.error_code = "DEVICE_UNREACHABLE";
-                else {
-                    const capabilities: HomeyCapabilities = homeyDevice.capabilitiesObj as any;
-                    const converter = await HomeyConverters.merge(query.custom_data);
-                    const states = converter.getStates(capabilities);
-                    device.capabilities = states.capabilities;
-                    device.properties = states.properties;
-                }
+                const converterNames = query.custom_data;
+                const converter = await HomeyConverters.merge(converterNames);
+                const device = converter.getStates(query.id, homeyDevices[query.id]);
                 payload.devices.push(device);
             })
         );
@@ -148,7 +116,7 @@ export class ProviderService {
         return payload;
     }
 
-    async devicesAction(token: string, body: ActionDevicesRequest) {
+    async setStates(token: string, body: ActionDevicesRequest) {
         const homeyApi = await this.#getHomeyAPI(token);
         const payload: ActionDevicesResponse["payload"] = {
             devices: []

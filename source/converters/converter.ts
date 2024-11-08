@@ -1,14 +1,12 @@
 import { HomeyAPIV2 } from "homey-api";
-import { CapabilityAction, CapabilityState } from "../typings";
-import { makeStateBody } from "./utils";
+import { CapabilityAction, CapabilityState, DiscoveryDevice, QueryDevice } from "../typings";
+import { getDeviceType, makeStateBody } from ".";
 
 export type HomeyCapability = HomeyAPIV2.ManagerDevices.Capability & { value: any };
 export type HomeyCapabilities = Record<string, HomeyCapability>;
-type ConverterBuilder<Params, SetValue> =
-    (converter: Converter<Params & { retrievable?: boolean }, SetValue>) => typeof converter;
 
 export class HomeyConverter {
-    private converters: Record<string, Converter<any, any>> = {};
+    private converters: Record<string, CapabilityConverter<any, any>> = {};
 
     constructor(readonly name: string, private type?: string) {}
 
@@ -18,17 +16,18 @@ export class HomeyConverter {
 
     use(converter: HomeyConverter) {
         const converters = { ...this.converters };
-        const convertersNew = { ...converter.converters };
-
-        Object.values(convertersNew).map(converterNew => {
-            const converterKey = `${converterNew.type},${converterNew.instance}`;
+        const newConverters = { ...converter.converters };
+        
+        Object.values(newConverters).map(newConverter => {
+            const converterKey = `${newConverter.type},${newConverter.instance}`;
             const converterName = converters[converterKey]?.name;
 
+            // Удаляем свойства, если их перекрывает новый конвертер
             converterName && Object.values(converters)
                 .map(converter => converter.name === converterName &&
                     delete converters[`${converter.type},${converter.instance}`]);
                 
-            converters[converterKey] = converterNew;
+            converters[converterKey] = newConverter;
         });
 
         this.type = converter.type || this.type;
@@ -36,15 +35,14 @@ export class HomeyConverter {
         return this;
     }
 
-    createState(run: ConverterBuilder<{ split?: boolean }, boolean>) {
+    createState(run: CapabilityBuilder<{ split?: boolean }, boolean>) {
         const type = "devices.capabilities.on_off";
         const instance = "on";
-        // @ts-ignore
-        this.converters[`${type},${instance}`] = run(new Converter(this.name, type, instance));
+        this.converters[`${type},${instance}`] = run(new CapabilityConverter(this.name, type, instance));
         return this;
     }
 
-    createColor(instance: string, run: ConverterBuilder<{
+    createColor(instance: string, run: CapabilityBuilder<{
         temperature_k?: {
             min: number;
             max: number;
@@ -52,26 +50,24 @@ export class HomeyConverter {
         scenes?: string[];
     }, any>) {
         const type = "devices.capabilities.color_setting";
-        // @ts-ignore
-        this.converters[`${type},${instance}`] = run(new Converter(this.name, type, instance));
+        this.converters[`${type},${instance}`] = run(new CapabilityConverter(this.name, type, instance));
         return this;
     }
 
-    createVideo(run: ConverterBuilder<{ protocols: string[] }, { protocols: string[] }>) {
+    createVideo(run: CapabilityBuilder<{ protocols: string[] }, { protocols: string[] }>) {
         const type = "devices.capabilities.video_stream";
         const instance = "get_stream";
-        this.converters[`${type},${instance}`] = run(new Converter(this.name, type, instance));
+        this.converters[`${type},${instance}`] = run(new CapabilityConverter(this.name, type, instance));
         return this;
     }
 
-    createMode(instance: string, run: ConverterBuilder<{ modes: string[] }, string>) {
+    createMode(instance: string, run: CapabilityBuilder<{ modes: string[] }, string>) {
         const type = "devices.capabilities.mode";
-        // @ts-ignore
-        this.converters[`${type},${instance}`] = run(new Converter(this.name, type, instance));
+        this.converters[`${type},${instance}`] = run(new CapabilityConverter(this.name, type, instance));
         return this;
     }
 
-    createRange(instance: string, run: ConverterBuilder<{
+    createRange(instance: string, run: CapabilityBuilder<{
         unit?: string;
         random_access?: boolean;
         range?: {
@@ -81,42 +77,49 @@ export class HomeyConverter {
         };
     }, number>) {
         const type = "devices.capabilities.range";
-        // @ts-ignore
-        this.converters[`${type},${instance}`] = run(new Converter(this.name, type, instance));
+        this.converters[`${type},${instance}`] = run(new CapabilityConverter(this.name, type, instance));
         return this;
     }
 
-    createToggle(instance: string, run: ConverterBuilder<{}, boolean>) {
+    createToggle(instance: string, run: CapabilityBuilder<{}, boolean>) {
         const type = "devices.capabilities.toggle";
-        // @ts-ignore
-        this.converters[`${type},${instance}`] = run(new Converter(this.name, type, instance));
+        this.converters[`${type},${instance}`] = run(new CapabilityConverter(this.name, type, instance));
         return this;
     }
 
-    createFloat(instance: string, run: ConverterBuilder<{ unit?: string }, number>) {
+    createFloat(instance: string, run: CapabilityBuilder<{ unit?: string }, number>) {
         const type = "devices.properties.float";
-        // @ts-ignore
-        this.converters[`${type},${instance}`] = run(new Converter(this.name, type, instance));
+        this.converters[`${type},${instance}`] = run(new CapabilityConverter(this.name, type, instance));
         return this;
     }
 
-    createEvent(instance: string, run: ConverterBuilder<{ events: string[] }, string>) {
+    createEvent(instance: string, run: CapabilityBuilder<{ events: string[] }, string>) {
         const type = "devices.properties.event";
-        // @ts-ignore
-        this.converters[`${type},${instance}`] = run(new Converter(this.name, type, instance));
+        this.converters[`${type},${instance}`] = run(new CapabilityConverter(this.name, type, instance));
         return this;
     }
 
-    getParams(capabilities: HomeyCapabilities) {
-        const response: any = {
-            capabilities: [], properties: [], custom_data: []
+    getDevice(device: HomeyAPIV2.ManagerDevices.Device, zones: Record<string, HomeyAPIV2.ManagerZones.Zone>) {
+        const response: DiscoveryDevice = {
+            id: device.id,
+            name: device.name,
+            room: zones[device.zone].name,
+            type: this.type || getDeviceType(device),
+            custom_data: [], capabilities: [], properties: []
         };
 
+        // Специальные команды
+        const note = device.note;
+        if (note && note.includes("@hidden;")) return;
+        if (note && note.includes("@type="))
+            response.type = `devices.types.${note.split("@type=")[1].split(";")[0]}`;
+
+        // Конвертация свойств
         let capabilityColor: any;
-        const converterIds = new Set();
         Object.values(this.converters).map(converter => {
+            const capabilities: HomeyCapabilities = device.capabilitiesObj as any;
             const capability = converter.convertParams(capabilities);
-            converterIds.add(converter.name);
+            response.custom_data.push(converter.name);
 
             if (capability.type === "devices.capabilities.color_setting") {
                 if (!capabilityColor) capabilityColor = capability;
@@ -127,22 +130,28 @@ export class HomeyConverter {
             response[converter.category].push(capability);
         });
 
+        response.custom_data = [...new Set(response.custom_data)];        
         capabilityColor && response.capabilities.push(capabilityColor);
-        response.custom_data = [...converterIds];
-        response.type = this.type;
+        if (!response.custom_data.length) return;
+        
         return response;
     }
 
-    getStates(capabilities: HomeyCapabilities) {
-        const converters = Object.values(this.converters);
-        const response: Record<"capabilities" | "properties", Array<CapabilityState>> = {
+    getStates(deviceId: string, device?: HomeyAPIV2.ManagerDevices.Device) {
+        const response: QueryDevice = {
+            id: device?.id || deviceId,
             capabilities: [], properties: []
         };
-
-        converters.map(converter => {
-            const capability = converter.convertGet(capabilities);
-            capability !== undefined && response[converter.category].push(capability);
-        });
+        
+        if (!device) response.error_code = "DEVICE_NOT_FOUND";
+        else if (device && (!device.ready || !device.available)) response.error_code = "DEVICE_UNREACHABLE";
+        else {
+            const converters = Object.values(this.converters);
+            converters.map(converter => {
+                const capability = converter.convertGet(device);
+                capability !== undefined && response[converter.category]!.push(capability);
+            });
+        }
 
         return response;
     }
@@ -167,11 +176,14 @@ export class HomeyConverter {
 
 type ParamsHandler<Params> = (capabilities: HomeyCapabilities) => Partial<Params>;
 
-class Converter<Params extends Record<string, any>, SetValue extends any> {
+type CapabilityBuilder<Params, SetValue> =
+    (converter: CapabilityConverter<Params & { retrievable?: boolean }, SetValue>) => typeof converter;
+
+class CapabilityConverter<Params extends Record<string, any>, SetValue extends any> {
     readonly category: "capabilities" | "properties";
     private parameters: Params;
     private handleParams: ParamsHandler<Params>;
-    private handleGet: (capabilities: HomeyCapabilities) => any;
+    private handleGet: (device: HomeyAPIV2.ManagerDevices.Device) => any;
     private handleSet: (value: any) => Record<string, any>;
 
     constructor(readonly name: string, readonly type: string, readonly instance: string) {
@@ -182,13 +194,13 @@ class Converter<Params extends Record<string, any>, SetValue extends any> {
         this.handleSet = () => ({});
     }
 
-    setParams(params: Params & { parse?: ParamsHandler<Params>; }) {
+    setParameters(params: Params & { parse?: ParamsHandler<Params> }) {
         const { parse, ...parameters } = params;
-        const prevHandler = this.handleParams;
-        
+        const currentHandler = this.handleParams;
+
         this.parameters = parameters as Params;
         parse && (this.handleParams = function (capabilities) {
-            const prevValue = prevHandler(capabilities);
+            const prevValue = currentHandler(capabilities);
             const value = parse(capabilities);
             return { ...prevValue, ...value };
         })
@@ -196,16 +208,19 @@ class Converter<Params extends Record<string, any>, SetValue extends any> {
         return this;
     }
 
-    getHomey<ValueType = any>(capabilityId: string, handler?: (value: ValueType) => SetValue | "@prev" | "@break") {
+    getCapability<ValueType = any>(capabilityId: string, handler?: (value: ValueType) => SetValue | "@prev" | "@break") {
         const currentHandler = this.handleGet;
         handler = handler ?? (value => value as unknown as SetValue);
 
-        this.handleGet = function (capabilities) {
-            const currentValue = currentHandler(capabilities);
+        this.handleGet = function (device) {
+            const currentValue = currentHandler(device);
             try {
+                const capabilities = (device.capabilitiesObj || {}) as HomeyCapabilities;
+                const settings = (device.settings || {}) as Record<string, any>;
+
                 const capability = capabilities[capabilityId];
-                let capabilityValue = capability.value;
-                if (capability.getable === false && capability.type === "boolean") capabilityValue = false;
+                let capabilityValue = (capability ? capability.value : settings[capabilityId]) ?? null;
+                if (capability && capability.getable === false && capability.type === "boolean") capabilityValue = false;
 
                 const value = capabilityValue === null && "@prev" || handler(capabilityValue);
                 if (value === "@prev") return currentValue;
@@ -222,7 +237,7 @@ class Converter<Params extends Record<string, any>, SetValue extends any> {
         return this;
     }
 
-    setHomey<ValueType = any>(capabilityId: string, handler?: (value: SetValue) => ValueType | "@break") {
+    setCapability<ValueType = any>(capabilityId: string, handler?: (value: SetValue) => ValueType | "@break") {
         const currentHandler = this.handleSet;
         handler = handler ?? (value => value as unknown as ValueType);
 
@@ -239,6 +254,10 @@ class Converter<Params extends Record<string, any>, SetValue extends any> {
         }
         
         return this;
+    }
+
+    getSetting<ValueType = any>(settingId: string, handler?: (value: ValueType) => SetValue | "@prev" | "@break") {
+        return this.getCapability(settingId, handler);
     }
 
     convertParams(capabilities: HomeyCapabilities) {
@@ -286,8 +305,8 @@ class Converter<Params extends Record<string, any>, SetValue extends any> {
         };
     }
 
-    convertGet(capabilities: HomeyCapabilities) {
-        const value = this.handleGet(capabilities);
+    convertGet(device: HomeyAPIV2.ManagerDevices.Device) {
+        const value = this.handleGet(device);
         if (value !== undefined) return makeStateBody(this.type, this.instance, { value });
         return undefined;
     }

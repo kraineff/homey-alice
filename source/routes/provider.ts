@@ -27,15 +27,15 @@ export const providerRoute = async (clientId: string, clientSecret: string) => {
             })
             .group("/devices", app => app
                 .get("/", async ({ token, requestId }) => {
-                    const payload = await service.devicesDiscovery(token);
+                    const payload = await service.getDevices(token);
                     return { request_id: requestId, payload };
                 })
                 .post("/query", async ({ token, requestId, body }) => {
-                    const payload = await service.devicesQuery(token, <any>body);
+                    const payload = await service.getStates(token, <any>body);
                     return { request_id: requestId, payload };
                 })
                 .post("/action", async ({ token, requestId, body }) => {
-                    const payload = await service.devicesAction(token, <any>body);
+                    const payload = await service.setStates(token, <any>body);
                     return { request_id: requestId, payload };
                 })
             )

@@ -3,9 +3,9 @@ import { HomeyConverter } from "../converter";
 export default () => HomeyConverter
     .create("windowcoverings_set")
     .createRange("open", run => run
-        .setParams({
+        .setParameters({
             unit: "percent",
             range: { min: 0, max: 100, precision: 1 }
         })
-        .getHomey<number>("windowcoverings_set", value => value * 100)
-        .setHomey<number>("windowcoverings_set", value => value / 100));
+        .getCapability<number>("windowcoverings_set", value => value * 100)
+        .setCapability<number>("windowcoverings_set", value => value / 100));
