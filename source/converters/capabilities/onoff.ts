@@ -1,7 +1,7 @@
 import { HomeyConverter } from "../converter";
 
-export default () => HomeyConverter
+export default HomeyConverter
     .create("onoff")
     .createState(run => run
-        .getCapability<boolean>("onoff")
-        .setCapability<boolean>("onoff"));
+        .onGetCapability<boolean>("onoff")
+        .onSetCapability<boolean>("onoff"));

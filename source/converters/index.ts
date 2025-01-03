@@ -2,22 +2,15 @@ import { readdir } from "node:fs/promises";
 import { HomeyConverter } from "./converter";
 
 export class HomeyConverters {
-    #converters: Record<string, HomeyConverter> = {};
-
     async get(converterName: string) {
         converterName = converterName.replace("homey:app:", "");
-        if (this.#converters[converterName]) return this.#converters[converterName];
-
         const directory = import.meta.dir + (!converterName.includes(":") ? "/capabilities/" : "/devices/");
         const converterFile = converterName + ".ts";
         const converterPath = directory + converterFile;
         const converters = await readdir(directory);
 
-        if (converters.includes(converterFile)) {
-            const converter = (await import(converterPath)).default() as HomeyConverter;
-            this.#converters[converterName] = converter
-            return this.#converters[converterName];
-        }
+        if (converters.includes(converterFile))
+            return (await import(converterPath)).default as HomeyConverter;
         return HomeyConverter.create("unknown");
     }
 

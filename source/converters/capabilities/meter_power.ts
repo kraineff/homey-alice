@@ -1,7 +1,7 @@
 import { HomeyConverter } from "../converter";
 
-export default () => HomeyConverter
+export default HomeyConverter
     .create("meter_power")
     .createFloat("electricity_meter", run => run
-        .setParameters({ unit: "kilowatt_hour" })
-        .getCapability<number>("meter_power"));
+        .onGetParameters({ unit: "kilowatt_hour" })
+        .onGetCapability<number>("meter_power"));

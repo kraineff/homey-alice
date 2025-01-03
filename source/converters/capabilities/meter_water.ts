@@ -1,7 +1,7 @@
 import { HomeyConverter } from "../converter";
 
-export default () => HomeyConverter
+export default HomeyConverter
     .create("meter_water")
     .createFloat("water_meter", run => run
-        .setParameters({ unit: "cubic_meter" })
-        .getCapability<number>("meter_water"));
+        .onGetParameters({ unit: "cubic_meter" })
+        .onGetCapability<number>("meter_water"));

@@ -1,7 +1,7 @@
 import { HomeyConverter } from "../converter";
 
-export default () => HomeyConverter
+export default HomeyConverter
     .create("volume_mute")
     .createToggle("mute", run => run
-        .getCapability<boolean>("volume_mute")
-        .setCapability<boolean>("volume_mute"));
+        .onGetCapability<boolean>("volume_mute")
+        .onSetCapability<boolean>("volume_mute"));

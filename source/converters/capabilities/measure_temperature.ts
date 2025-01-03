@@ -1,7 +1,7 @@
 import { HomeyConverter } from "../converter";
 
-export default () => HomeyConverter
+export default HomeyConverter
     .create("measure_temperature")
     .createFloat("temperature", run => run
-        .setParameters({ unit: "temperature.celsius" })
-        .getCapability<number>("measure_temperature"));
+        .onGetParameters({ unit: "temperature.celsius" })
+        .onGetCapability<number>("measure_temperature"));

@@ -1,7 +1,7 @@
 import { HomeyConverter } from "../converter";
 
-export default () => HomeyConverter
+export default HomeyConverter
     .create("alarm_tamper")
     .createEvent("open", run => run
-        .setParameters({ events: ["closed", "opened"] })
-        .getCapability<boolean>("alarm_tamper", value => ["closed", "opened"][Number(value)]));
+        .onGetParameters({ events: ["closed", "opened"] })
+        .onGetCapability<boolean>("alarm_tamper", value => ["closed", "opened"][Number(value)]));

@@ -92,7 +92,7 @@ export class ProviderService {
             Object.values(homeyDevices).map(async homeyDevice => {
                 const converterNames = Object.keys(homeyDevice.capabilitiesObj);
                 const converter = await this.#homeyConverters.merge([...converterNames, homeyDevice.driverId]);
-                const device = converter.getDevice(homeyDevice, homeyZones);
+                const device = await converter.getDevice(homeyDevice, homeyZones);
                 device && payload.devices.push(device);
             })
         );
@@ -111,7 +111,7 @@ export class ProviderService {
             body.devices.map(async query => {
                 const converterNames = query.custom_data;
                 const converter = await this.#homeyConverters.merge(converterNames);
-                const device = converter.getStates(query.id, homeyDevices[query.id]);
+                const device = await converter.getStates(query.id, homeyDevices[query.id]);
                 payload.devices.push(device);
             })
         );
@@ -134,7 +134,7 @@ export class ProviderService {
     
                 const converter = await this.#homeyConverters.merge(action.custom_data);
                 const converterSet = async (capabilityId: string, value: any) =>
-                    homeyApi.devices.setCapabilityValue({ capabilityId, deviceId, value });
+                    homeyApi.devices.onSetValue({ capabilityId, deviceId, value });
     
                 const states = await converter.setStates(action.capabilities, converterSet);
                 device.capabilities = states.capabilities;
