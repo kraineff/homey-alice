@@ -134,7 +134,7 @@ export class ProviderService {
     
                 const converter = await this.#homeyConverters.merge(action.custom_data);
                 const converterSet = async (capabilityId: string, value: any) =>
-                    homeyApi.devices.onSetValue({ capabilityId, deviceId, value });
+                    homeyApi.devices.setCapabilityValue({ capabilityId, deviceId, value });
     
                 const states = await converter.setStates(action.capabilities, converterSet);
                 device.capabilities = states.capabilities;
