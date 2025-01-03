@@ -21,6 +21,7 @@ export const providerRoute = async (clientId: string, clientSecret: string) => {
             .onError(({ path, error }) => {
                 console.log(`[Провайдер: ${path}] -> Ошибка: ${error}`);
             })
+            .onAfterResponse(() => Bun.gc(true))
             .post("/unlink", async ({ token, requestId }) => {
                 await service.userRemove(token);
                 return { request_id: requestId };
