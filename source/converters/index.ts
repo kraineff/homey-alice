@@ -1,7 +1,7 @@
 import { readdir } from "node:fs/promises";
 import { HomeyConverter } from "./converter";
 
-class Converters {
+export class HomeyConverters {
     #converters: Record<string, HomeyConverter> = {};
 
     async get(converterName: string) {
@@ -32,6 +32,5 @@ class Converters {
     }
 }
 
-export const HomeyConverters = new Converters();
 export * from "./converter";
 export * from "./utils";

@@ -19,7 +19,7 @@ export const providerRoute = async (clientId: string, clientSecret: string) => {
                 return { token, requestId };
             })
             .onError(({ path, error }) => {
-                console.log(`[Провайдер: ${path}] -> Ошибка: ${error.message}`);
+                console.log(`[Провайдер: ${path}] -> Ошибка: ${error}`);
             })
             .post("/unlink", async ({ token, requestId }) => {
                 await service.userRemove(token);

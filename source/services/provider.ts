@@ -5,8 +5,11 @@ import { PrismaClient } from "@prisma/client";
 
 export class ProviderService {
     #homeyApis: Record<string, any> = {};
+    #homeyConverters: HomeyConverters;
 
-    constructor(private clientId: string, private clientSecret: string) {}
+    constructor(private clientId: string, private clientSecret: string) {
+        this.#homeyConverters = new HomeyConverters();
+    }
 
     #getStorageAdapter(token: string) {
         const storageAdapter = new AthomCloudAPI.StorageAdapter();
@@ -88,7 +91,7 @@ export class ProviderService {
         await Promise.all(
             Object.values(homeyDevices).map(async homeyDevice => {
                 const converterNames = Object.keys(homeyDevice.capabilitiesObj);
-                const converter = await HomeyConverters.merge([...converterNames, homeyDevice.driverId]);
+                const converter = await this.#homeyConverters.merge([...converterNames, homeyDevice.driverId]);
                 const device = converter.getDevice(homeyDevice, homeyZones);
                 device && payload.devices.push(device);
             })
@@ -107,7 +110,7 @@ export class ProviderService {
         await Promise.all(
             body.devices.map(async query => {
                 const converterNames = query.custom_data;
-                const converter = await HomeyConverters.merge(converterNames);
+                const converter = await this.#homeyConverters.merge(converterNames);
                 const device = converter.getStates(query.id, homeyDevices[query.id]);
                 payload.devices.push(device);
             })
@@ -129,7 +132,7 @@ export class ProviderService {
                     id: deviceId, capabilities: []
                 };
     
-                const converter = await HomeyConverters.merge(action.custom_data);
+                const converter = await this.#homeyConverters.merge(action.custom_data);
                 const converterSet = async (capabilityId: string, value: any) =>
                     homeyApi.devices.setCapabilityValue({ capabilityId, deviceId, value });
     
