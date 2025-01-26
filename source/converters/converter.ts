@@ -6,7 +6,7 @@ export type HomeyCapability = HomeyAPIV2.ManagerDevices.Capability & { value: an
 export type HomeyCapabilities = Record<string, HomeyCapability>;
 
 export class HomeyConverter {
-    private converters: Record<string, CapabilityConverter<any, any>> = {};
+    private converters = new Map<string, CapabilityConverter<any, any>>();
 
     constructor(readonly name: string, private type?: string) {}
 
@@ -15,16 +15,16 @@ export class HomeyConverter {
     }
 
     use(converter: HomeyConverter) {
-        const converters = { ...this.converters };
-        const convertersNew = { ...converter.converters };
-        
-        Object.entries(convertersNew).forEach(([key, converter]) => {
-            const converterName = converters[key]?.name;
+        const converters = new Map(this.converters);
+        const convertersNew = new Map(converter.converters);
 
-            converterName && Object.entries(converters)
-                .forEach(([key, converter]) => converter.name === converterName && delete converters[key]);
+        convertersNew.forEach((converter, key) => {
+            const converterName = converters.get(key)?.name;
 
-            converters[key] = converter;
+            converterName && converters.forEach((converter, key) =>
+                converter.name === converterName && converters.delete(key));
+            
+            converters.set(key, converter);
         });
 
         this.type = converter.type || this.type;
@@ -36,7 +36,7 @@ export class HomeyConverter {
     createState(run: CapabilityBuilder<{ split?: boolean }, boolean>) {
         const type = "devices.capabilities.on_off";
         const instance = "on";
-        this.converters[`${type},${instance}`] = run(new CapabilityConverter(this.name, type, instance));
+        this.converters.set(`${type},${instance}`, run(new CapabilityConverter(this.name, type, instance)));
         return this;
     }
 
@@ -48,20 +48,20 @@ export class HomeyConverter {
         scenes?: string[];
     }, any>) {
         const type = "devices.capabilities.color_setting";
-        this.converters[`${type},${instance}`] = run(new CapabilityConverter(this.name, type, instance));
+        this.converters.set(`${type},${instance}`, run(new CapabilityConverter(this.name, type, instance)));
         return this;
     }
 
     createVideo(run: CapabilityBuilder<{ protocols: string[] }, { protocols: string[] }>) {
         const type = "devices.capabilities.video_stream";
         const instance = "get_stream";
-        this.converters[`${type},${instance}`] = run(new CapabilityConverter(this.name, type, instance));
+        this.converters.set(`${type},${instance}`, run(new CapabilityConverter(this.name, type, instance)));
         return this;
     }
 
     createMode(instance: string, run: CapabilityBuilder<{ modes: string[] }, string>) {
         const type = "devices.capabilities.mode";
-        this.converters[`${type},${instance}`] = run(new CapabilityConverter(this.name, type, instance));
+        this.converters.set(`${type},${instance}`, run(new CapabilityConverter(this.name, type, instance)));
         return this;
     }
 
@@ -75,25 +75,25 @@ export class HomeyConverter {
         };
     }, number>) {
         const type = "devices.capabilities.range";
-        this.converters[`${type},${instance}`] = run(new CapabilityConverter(this.name, type, instance));
+        this.converters.set(`${type},${instance}`, run(new CapabilityConverter(this.name, type, instance)));
         return this;
     }
 
     createToggle(instance: string, run: CapabilityBuilder<{}, boolean>) {
         const type = "devices.capabilities.toggle";
-        this.converters[`${type},${instance}`] = run(new CapabilityConverter(this.name, type, instance));
+        this.converters.set(`${type},${instance}`, run(new CapabilityConverter(this.name, type, instance)));
         return this;
     }
 
     createFloat(instance: string, run: CapabilityBuilder<{ unit?: string }, number>) {
         const type = "devices.properties.float";
-        this.converters[`${type},${instance}`] = run(new CapabilityConverter(this.name, type, instance));
+        this.converters.set(`${type},${instance}`, run(new CapabilityConverter(this.name, type, instance)));
         return this;
     }
 
     createEvent(instance: string, run: CapabilityBuilder<{ events: string[] }, string>) {
         const type = "devices.properties.event";
-        this.converters[`${type},${instance}`] = run(new CapabilityConverter(this.name, type, instance));
+        this.converters.set(`${type},${instance}`, run(new CapabilityConverter(this.name, type, instance)));
         return this;
     }
 
@@ -115,7 +115,7 @@ export class HomeyConverter {
         // Конвертация свойств
         let capabilityColor: any;
         await Promise.all(
-            Object.values(this.converters).map(async converter => {
+            this.converters.values().map(async converter => {
                 const capabilities: HomeyCapabilities = device.capabilitiesObj as any;
                 const capability = await converter.getParameters(capabilities);
                 response.custom_data.push(converter.name);
@@ -146,9 +146,8 @@ export class HomeyConverter {
         if (!device) response.error_code = "DEVICE_NOT_FOUND";
         else if (device && (!device.ready || !device.available)) response.error_code = "DEVICE_UNREACHABLE";
         else {
-            const converters = Object.values(this.converters);
             await Promise.all(
-                converters.map(async converter => {
+                this.converters.values().map(async converter => {
                     const capability = await converter.getCapability(device);
                     capability !== undefined && response[converter.category]!.push(capability);
                 })
@@ -166,7 +165,7 @@ export class HomeyConverter {
         response.capabilities = await Promise.all(
             capabilities.map(async ({ type, state }) => {
                 const instance = state.instance;
-                const converter = this.converters[`${type},${instance}`];
+                const converter = this.converters.get(`${type},${instance}`);
                 if (converter) return await converter.setCapability(state.value, handler);
                 
                 const result = { status: "ERROR", error_code: "INVALID_ACTION" };
