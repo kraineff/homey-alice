@@ -33,11 +33,17 @@ export class HomeyConverter {
         return this;
     }
 
-    createState(run: CapabilityBuilder<{ split?: boolean }, boolean>) {
-        const type = "devices.capabilities.on_off";
-        const instance = "on";
-        this.converters.set(`${type},${instance}`, run(new CapabilityConverter(this.name, type, instance)));
+    private createConverter<Params extends Record<string, any>, SetValue>(
+        type: string,
+        instance: string,
+        run: CapabilityBuilder<Params, SetValue>
+    ) {
+        this.converters.set(`${type},${instance}`, run(new CapabilityConverter<Params, SetValue>(this.name, type, instance)));
         return this;
+    }
+
+    createState(run: CapabilityBuilder<{ split?: boolean }, boolean>) {
+        return this.createConverter("devices.capabilities.on_off", "on", run);
     }
 
     createColor(instance: string, run: CapabilityBuilder<{
@@ -47,22 +53,15 @@ export class HomeyConverter {
         };
         scenes?: string[];
     }, any>) {
-        const type = "devices.capabilities.color_setting";
-        this.converters.set(`${type},${instance}`, run(new CapabilityConverter(this.name, type, instance)));
-        return this;
+        return this.createConverter("devices.capabilities.color_setting", instance, run);
     }
 
     createVideo(run: CapabilityBuilder<{ protocols: string[] }, { protocols: string[] }>) {
-        const type = "devices.capabilities.video_stream";
-        const instance = "get_stream";
-        this.converters.set(`${type},${instance}`, run(new CapabilityConverter(this.name, type, instance)));
-        return this;
+        return this.createConverter("devices.capabilities.video_stream", "get_stream", run);
     }
 
     createMode(instance: string, run: CapabilityBuilder<{ modes: string[] }, string>) {
-        const type = "devices.capabilities.mode";
-        this.converters.set(`${type},${instance}`, run(new CapabilityConverter(this.name, type, instance)));
-        return this;
+        return this.createConverter("devices.capabilities.mode", instance, run);
     }
 
     createRange(instance: string, run: CapabilityBuilder<{
@@ -74,27 +73,19 @@ export class HomeyConverter {
             precision: number;
         };
     }, number>) {
-        const type = "devices.capabilities.range";
-        this.converters.set(`${type},${instance}`, run(new CapabilityConverter(this.name, type, instance)));
-        return this;
+        return this.createConverter("devices.capabilities.range", instance, run);
     }
 
     createToggle(instance: string, run: CapabilityBuilder<{}, boolean>) {
-        const type = "devices.capabilities.toggle";
-        this.converters.set(`${type},${instance}`, run(new CapabilityConverter(this.name, type, instance)));
-        return this;
+        return this.createConverter("devices.capabilities.toggle", instance, run);
     }
 
     createFloat(instance: string, run: CapabilityBuilder<{ unit?: string }, number>) {
-        const type = "devices.properties.float";
-        this.converters.set(`${type},${instance}`, run(new CapabilityConverter(this.name, type, instance)));
-        return this;
+        return this.createConverter("devices.properties.float", instance, run);
     }
 
     createEvent(instance: string, run: CapabilityBuilder<{ events: string[] }, string>) {
-        const type = "devices.properties.event";
-        this.converters.set(`${type},${instance}`, run(new CapabilityConverter(this.name, type, instance)));
-        return this;
+        return this.createConverter("devices.properties.event", instance, run);
     }
 
     async getDevice(device: HomeyAPIV2.ManagerDevices.Device, zones: Record<string, HomeyAPIV2.ManagerZones.Zone>) {
@@ -114,9 +105,10 @@ export class HomeyConverter {
 
         // Конвертация свойств
         let capabilityColor: any;
+        const capabilities = device.capabilitiesObj as HomeyCapabilities;
+
         await Promise.all(
             this.converters.values().map(async converter => {
-                const capabilities: HomeyCapabilities = device.capabilitiesObj as any;
                 const capability = await converter.getParameters(capabilities);
                 response.custom_data.push(converter.name);
     
@@ -130,11 +122,9 @@ export class HomeyConverter {
             })
         );
 
-        response.custom_data = [...new Set(response.custom_data)];        
         capabilityColor && response.capabilities.push(capabilityColor);
-        if (!response.custom_data.length) return;
-        
-        return response;
+        response.custom_data = [...new Set(response.custom_data)];                
+        return response.custom_data.length ? response : undefined;
     }
 
     async getStates(deviceId: string, device?: HomeyAPIV2.ManagerDevices.Device) {
@@ -182,14 +172,18 @@ type ParamsHandler<Params> = (capabilities: HomeyCapabilities) => Partial<Params
 type CapabilityBuilder<Params, SetValue> =
     (converter: CapabilityConverter<Params & { retrievable?: boolean }, SetValue>) => typeof converter;
 
-class CapabilityConverter<Params extends Record<string, any>, SetValue extends any> {
+class CapabilityConverter<Params extends Record<string, any>, SetValue> {
     readonly category: "capabilities" | "properties";
     private parameters: Params = {} as Params;
     private onParamsHandler?: ParamsHandler<Params>;
-    private onGetHandler?: (device: HomeyAPIV2.ManagerDevices.Device) => any;
-    private onSetHandler?: (value: any) => Record<string, any>;
+    private onGetHandler?: (device: HomeyAPIV2.ManagerDevices.Device) => SetValue | undefined;
+    private onSetHandler?: (value: SetValue) => Record<string, any>;
 
-    constructor(readonly name: string, readonly type: string, readonly instance: string) {
+    constructor(
+        readonly name: string,
+        readonly type: string,
+        readonly instance: string
+    ) {
         this.category = type.split(".")[1] as any;
     }
 
@@ -197,34 +191,38 @@ class CapabilityConverter<Params extends Record<string, any>, SetValue extends a
         const { parse, ...parameters } = values;
         this.parameters = parameters as Params;
 
-        const currentHandler = this.onParamsHandler || (() => ({}));
-        parse && (this.onParamsHandler = function (capabilities) {
-            const value = currentHandler(capabilities);
-            const newValue = parse(capabilities);
-            return { ...value, ...newValue };
-        })
+        if (parse) {
+            const currentHandler = this.onParamsHandler || (() => ({}));
+            this.onParamsHandler = capabilities =>
+                ({...currentHandler(capabilities), ...parse(capabilities)});
+        }
         return this;
     }
 
-    onGetCapability<ValueType = any>(capabilityId: string, handler?: (value: ValueType) => SetValue | "@prev" | "@break") {
+    onGetCapability<ValueType>(
+        capabilityId: string, 
+        handler?: (value: ValueType) => SetValue | "@prev" | "@break"
+    ) {
         const currentHandler = this.onGetHandler || (() => undefined);
         const newHandler = handler ?? (value => value as unknown as SetValue);
 
-        this.onGetHandler = function (device) {
+        this.onGetHandler = device => {
             try {
                 const capability = (device.capabilitiesObj as HomeyCapabilities)?.[capabilityId];
                 const value = currentHandler(device);
-                const newValue = (capability.value === null || capability.value === undefined)
-                    && "@prev" || newHandler(capability.value);
+
+                if (!capability?.value && capability?.value !== false)
+                    return value;
 
                 if (capability.type === "boolean" && capability.getable === false)
-                    return false;
+                    return false as SetValue;
 
+                const newValue = newHandler(capability.value);
                 if (newValue === "@break") return undefined;
                 else if (newValue === "@prev") return value;
-                else if (typeof newValue === "number") return Math.abs(newValue);
-                else if (typeof newValue === "object" && typeof value === "object") return { ...value, ...newValue };
-                else return newValue;
+                else if (typeof newValue === "number") return Math.abs(newValue) as SetValue;
+                else if (typeof newValue === "object" && typeof value === "object") return { ...value, ...newValue } as SetValue;
+                else return newValue as SetValue;
             } catch (error) {
                 return undefined;
             }
@@ -232,22 +230,27 @@ class CapabilityConverter<Params extends Record<string, any>, SetValue extends a
         return this;
     }
 
-    onGetSetting<ValueType = any>(settingId: string, handler?: (value: ValueType) => SetValue | "@prev" | "@break") {
+    onGetSetting<ValueType>(
+        settingId: string, 
+        handler?: (value: ValueType) => SetValue | "@prev" | "@break"
+    ) {
         const currentHandler = this.onGetHandler || (() => undefined);
         const newHandler = handler ?? (value => value as unknown as SetValue);
 
-        this.onGetHandler = function (device) {
+        this.onGetHandler = device => {
             try {
                 const setting = (device.settings as Record<string, any>)?.[settingId];
                 const value = currentHandler(device);
-                const newValue = (setting === null || setting === undefined)
-                    && "@prev" || newHandler(setting);
 
+                if (!setting?.value && setting?.value !== false)
+                    return value;
+
+                const newValue = newHandler(setting);
                 if (newValue === "@break") return undefined;
                 else if (newValue === "@prev") return value;
-                else if (typeof newValue === "number") return Math.abs(newValue);
-                else if (typeof newValue === "object" && typeof value === "object") return { ...value, ...newValue };
-                else return newValue;
+                else if (typeof newValue === "number") return Math.abs(newValue) as SetValue;
+                else if (typeof newValue === "object" && typeof value === "object") return { ...value, ...newValue } as SetValue;
+                else return newValue as SetValue;
             } catch (error) {
                 return undefined;
             }
@@ -255,15 +258,17 @@ class CapabilityConverter<Params extends Record<string, any>, SetValue extends a
         return this;
     }
 
-    onSetCapability<ValueType = any>(capabilityId: string, handler?: (value: SetValue) => ValueType | "@break") {
+    onSetCapability<ValueType>(
+        capabilityId: string,
+        handler?: (value: SetValue) => ValueType | "@break"
+    ) {
         const currentHandler = this.onSetHandler ?? (() => ({} as any));
         const newHandler = handler ?? (value => value as unknown as ValueType);
 
-        this.onSetHandler = function (setValue) {
+        this.onSetHandler = setValue => {
             try {
                 const values = currentHandler(setValue);
                 const newValue = newHandler(setValue);
-
                 values[capabilityId] = (newValue === "@break" || newValue === null || newValue === undefined) ? undefined : newValue;
                 return values;
             } catch (error) {
