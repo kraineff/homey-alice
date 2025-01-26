@@ -211,7 +211,7 @@ class CapabilityConverter<Params extends Record<string, any>, SetValue> {
                 const capability = (device.capabilitiesObj as HomeyCapabilities)?.[capabilityId];
                 const value = currentHandler(device);
 
-                if (!capability?.value && capability?.value !== false)
+                if (!capability || capability.value === undefined || capability.value === null)
                     return value;
 
                 if (capability.type === "boolean" && capability.getable === false)
@@ -242,7 +242,7 @@ class CapabilityConverter<Params extends Record<string, any>, SetValue> {
                 const setting = (device.settings as Record<string, any>)?.[settingId];
                 const value = currentHandler(device);
 
-                if (!setting?.value && setting?.value !== false)
+                if (!setting || setting.value === undefined || setting.value === null)
                     return value;
 
                 const newValue = newHandler(setting);
