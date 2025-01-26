@@ -16,22 +16,20 @@ export class HomeyConverter {
 
     use(converter: HomeyConverter) {
         const converters = { ...this.converters };
-        const newConverters = { ...converter.converters };
+        const convertersNew = { ...converter.converters };
         
-        Object.values(newConverters).map(newConverter => {
-            const converterKey = `${newConverter.type},${newConverter.instance}`;
-            const converterName = converters[converterKey]?.name;
+        Object.entries(convertersNew).forEach(([key, converter]) => {
+            const converterName = converters[key]?.name;
 
-            // Удаляем свойства, если их перекрывает новый конвертер
-            converterName && Object.values(converters)
-                .map(converter => converter.name === converterName &&
-                    delete converters[`${converter.type},${converter.instance}`]);
-                
-            converters[converterKey] = newConverter;
+            converterName && Object.entries(converters)
+                .forEach(([key, converter]) => converter.name === converterName && delete converters[key]);
+
+            converters[key] = converter;
         });
 
         this.type = converter.type || this.type;
         this.converters = converters;
+        (converter as any) = null;
         return this;
     }
 
